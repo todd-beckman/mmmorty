@@ -2,12 +2,14 @@ package main
 
 import (
 	"flag"
+	"log"
 	"math/rand"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/todd-beckman/mmmorty"
+	"github.com/todd-beckman/mmmorty/colorplugin"
 )
 
 var discordToken string
@@ -37,7 +39,6 @@ func main() {
 
 	// Generally CommandPlugins don't hold state, so we share one instance of the command plugin for all services.
 	cp := mmmorty.NewCommandPlugin()
-	//cp.AddCommand("invite", inviteplugin.InviteCommand, inviteplugin.InviteHelp)
 
 	cp.AddCommand("quit", func(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, args string, parts []string) {
 		if service.IsBotOwner(message) {
@@ -59,6 +60,10 @@ func main() {
 		bot.RegisterService(discord)
 
 		bot.RegisterPlugin(discord, cp)
+		bot.RegisterPlugin(discord, colorplugin.New())
+	} else {
+		log.Println("(discordEmail and discordPassword) or discordToken is required.")
+		os.Exit(1)
 	}
 
 	// Start all our services.
