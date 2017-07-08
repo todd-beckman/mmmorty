@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -50,7 +51,7 @@ func main() {
 	if (discordEmail != "" && discordPassword != "") || discordToken != "" {
 		var discord *mmmorty.Discord
 		if discordToken != "" {
-			discord = mmmorty.NewDiscord(discordToken)
+			discord = mmmorty.NewDiscord(fmt.Sprintf("Bot %s", discordToken))
 		} else {
 			discord = mmmorty.NewDiscord(discordEmail, discordPassword)
 		}
