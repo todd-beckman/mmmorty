@@ -17,7 +17,7 @@ Check that one out. It's a really good example.
     - Read Messages
     - Send Messages
 
-    This means you should connect to https://discordapp.com/oauth2/authorize?client_id=<client id>&scope=bot&permissions=26843852868438528
+    This means you should connect to https://discordapp.com/oauth2/authorize?client_id=\<client id\>&scope=bot&permissions=26843852868438528
 
 1. Run this bot. Use `make` to install mmmorty globally, and then run:
 
