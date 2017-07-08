@@ -6,7 +6,7 @@ import (
 	"log"
 	"regexp"
 
-	"github.com/iopred/discordgo"
+	"github.com/bwmarrin/discordgo"
 )
 
 // The number of guilds supported by one shard.
@@ -25,12 +25,12 @@ type DiscordMessage struct {
 }
 
 // Channel returns the channel id for this message.
-func (m *DiscordMessage) Channel() string {
+func (m DiscordMessage) Channel() string {
 	return m.DiscordgoMessage.ChannelID
 }
 
 // UserName returns the user name for this message.
-func (m *DiscordMessage) UserName() string {
+func (m DiscordMessage) UserName() string {
 	me := m.DiscordgoMessage
 	if me.Author == nil {
 		return ""
@@ -44,7 +44,7 @@ func (m *DiscordMessage) UserName() string {
 }
 
 // UserID returns the user id for this message.
-func (m *DiscordMessage) UserID() string {
+func (m DiscordMessage) UserID() string {
 	if m.DiscordgoMessage.Author == nil {
 		return ""
 	}
@@ -53,7 +53,7 @@ func (m *DiscordMessage) UserID() string {
 }
 
 // UserAvatar returns the avatar url for this message.
-func (m *DiscordMessage) UserAvatar() string {
+func (m DiscordMessage) UserAvatar() string {
 	if m.DiscordgoMessage.Author == nil {
 		return ""
 	}
@@ -62,7 +62,7 @@ func (m *DiscordMessage) UserAvatar() string {
 }
 
 // Message returns the message content for this message.
-func (m *DiscordMessage) Message() string {
+func (m DiscordMessage) Message() string {
 	if m.Content == nil {
 		c := m.DiscordgoMessage.ContentWithMentionsReplaced()
 		c = m.Discord.replaceRoleNames(m.DiscordgoMessage, c)
@@ -74,17 +74,17 @@ func (m *DiscordMessage) Message() string {
 }
 
 // RawMessage returns the raw message content for this message.
-func (m *DiscordMessage) RawMessage() string {
+func (m DiscordMessage) RawMessage() string {
 	return m.DiscordgoMessage.Content
 }
 
 // MessageID returns the message ID for this message.
-func (m *DiscordMessage) MessageID() string {
+func (m DiscordMessage) MessageID() string {
 	return m.DiscordgoMessage.ID
 }
 
 // Type returns the type of message.
-func (m *DiscordMessage) Type() MessageType {
+func (m DiscordMessage) Type() MessageType {
 	return m.MessageType
 }
 
@@ -385,6 +385,21 @@ func (d *Discord) IsModerator(message Message) bool {
 	}
 
 	return d.IsChannelOwner(message)
+}
+
+func (d *Discord) GetRoles(message DiscordMessage) []*discordgo.Role {
+	discordMessage := message.DiscordgoMessage
+	c, err := d.Channel(discordMessage.ChannelID)
+	if err != nil {
+		return []*discordgo.Role{}
+	}
+
+	g, err := d.Guild(c.GuildID)
+	if err != nil {
+		return []*discordgo.Role{}
+	}
+
+	return g.Roles
 }
 
 // ChannelCount returns the number of channels the bot is in.

@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
-	//	"github.com/dustin/go-humanize"
+	//"github.com/dustin/go-humanize"
+	"github.com/bwmarrin/discordgo"
 	"github.com/todd-beckman/mmmorty"
 )
 
@@ -14,6 +16,22 @@ const colorCommand = "color me"
 type ColorPlugin struct {
 	bot *mmmorty.Bot
 }
+
+// Used to determine if the role is more than aesthetic
+var authPermissions = 0x00000002 | // kick
+	0x00000004 | // ban
+	0x00000008 | // admin
+	0x00000010 | // manage channels
+	0x00000020 | // manage guild
+	0x00000080 | // view audit log
+	0x00002000 | // manage messages
+	0x00400000 | // mute members in voice channel
+	0x00800000 | // deafen members in voice channel
+	0x01000000 | // move members between channels
+	0x08000000 | // modify others' nicknames
+	0x10000000 | // manage roles
+	0x20000000 | // manage webhooks
+	0x40000000 //   manage emojis
 
 func (p *ColorPlugin) Help(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, detailed bool) []string {
 	help := mmmorty.CommandHelp(service, colorCommand, "<color>", "assigns the desired color if it is avialable")
@@ -33,6 +51,10 @@ func (p *ColorPlugin) Load(bot *mmmorty.Bot, service mmmorty.Service, data []byt
 func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
 	defer mmmorty.MessageRecover()
 
+	if service.Name() != mmmorty.DiscordServiceName {
+		return
+	}
+
 	if service.IsMe(message) {
 		return
 	}
@@ -43,20 +65,43 @@ func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message
 
 	_, parts := mmmorty.ParseCommand(service, message)
 
-	if len(parts) != 2 {
-		log.Println(fmt.Sprintf("color me message improperly formatted: %s", message))
-		return
-	}
-
-	color := parts[1]
-
 	requester := message.UserName()
 	if service.Name() == mmmorty.DiscordServiceName {
 		requester = fmt.Sprintf("<@%s>", message.UserID())
 	}
 
+	if len(parts) != 2 {
+		reply := fmt.Sprintf("Uh, %s, I can't give you more than one color.")
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
+
+	color := strings.ToLower(parts[1])
+
+	discord := service.(*mmmorty.Discord)
+	discordMessage := message.(mmmorty.DiscordMessage)
+	roles := discord.GetRoles(discordMessage)
+	var role *discordgo.Role
+	for _, r := range roles {
+		if strings.ToLower(r.Name) == color {
+			role = r
+			break
+		}
+	}
+
+	if role == nil {
+		reply := fmt.Sprintf("Uh, Rick, I can't find a role called %s", color)
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
+
+	if role.Permissions&authPermissions > 0 {
+		reply := fmt.Sprintf("Uh, Rick, I think  %s is more than just a colored role.")
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
+
 	reply := fmt.Sprintf("Sorry %s, you want to be %s but I can't do that yet", requester, color)
-	log.Println(reply)
 	service.SendMessage(message.Channel(), reply)
 }
 
