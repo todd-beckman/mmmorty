@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"regexp"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -387,9 +388,19 @@ func (d *Discord) IsModerator(message Message) bool {
 	return d.IsChannelOwner(message)
 }
 
-func (d *Discord) GetRoles(message DiscordMessage) []*discordgo.Role {
-	discordMessage := message.DiscordgoMessage
-	c, err := d.Channel(discordMessage.ChannelID)
+func (d *Discord) GetRoleByName(channel, roleName string) *discordgo.Role {
+	roles := d.GetRoles(channel)
+	for _, r := range roles {
+		if strings.ToLower(r.Name) == roleName {
+			return r
+		}
+	}
+
+	return nil
+}
+
+func (d *Discord) GetRoles(channel string) []*discordgo.Role {
+	c, err := d.Channel(channel)
 	if err != nil {
 		return []*discordgo.Role{}
 	}
@@ -400,6 +411,24 @@ func (d *Discord) GetRoles(message DiscordMessage) []*discordgo.Role {
 	}
 
 	return g.Roles
+}
+
+func (d *Discord) GuildMemberRoleAdd(channel, user, role string) bool {
+	err := d.Session.GuildMemberRoleAdd(channel, user, role)
+	if err != nil {
+		log.Println(fmt.Sprintf("%v", err))
+		return false
+	}
+	return true
+}
+
+func (d *Discord) GuildMemberRoleRemove(channel, user, role string) bool {
+	err := d.Session.GuildMemberRoleRemove(channel, user, role)
+	if err != nil {
+		log.Println(fmt.Sprintf("%v", err))
+		return false
+	}
+	return true
 }
 
 // ChannelCount returns the number of channels the bot is in.
@@ -477,6 +506,15 @@ func (d *Discord) UserColor(userID, channelID string) int {
 		}
 	}
 	return 0
+}
+
+func (d *Discord) UserRoles(channel, memberId string) []string {
+	member, err := d.Session.GuildMember(channel, memberId)
+	if err != nil {
+		log.Println(fmt.Sprintf("%v", err))
+		return []string{}
+	}
+	return member.Roles
 }
 
 func (d *Discord) Nickname(message Message) string {
