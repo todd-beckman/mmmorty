@@ -19,6 +19,8 @@ Use `@<botname> color me <color>` so mmmorty can set your color. This requires a
 2. Call `@<botname> manage color <color list>`. For example, `@<botname> manage color red yellow green blue purple`
 3. Make sure mmmorty's role is listed above the colors so it has permission to add/remove them.
 
+To stop managing colors, use `@<botname> stop managing <color list>`. This could be handy either when removing/renaming a role or elevating its permissions and invalidating its use as a color-only role.
+
 Mmmorty will refuse to assign roles which have any permissions applied or that are above it in the permissions list. It is expected, and recommended, to have colored roles function separately from user permissions.
 
 ## Setting Up
@@ -35,7 +37,7 @@ Mmmorty will refuse to assign roles which have any permissions applied or that a
 
 1. Run this bot. Use `make` to install mmmorty globally, and then run:
 
-    `mmmorty -discordtoken <token> -discordapplicationclientid <client id>`
+    `mmmorty -discordtoken <token> -discordowneruserid <your user id>`
 
 ## Troubleshooting
 
