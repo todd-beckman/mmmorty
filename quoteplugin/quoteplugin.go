@@ -76,6 +76,12 @@ func (p *QuotePlugin) handleAddQuoteCommand(bot *mmmorty.Bot, service mmmorty.Se
 		return
 	}
 
+	if strings.Contains(message.Message(), "http") {
+		reply := fmt.Sprintf("Uh, %s, I would rather not remember quotes with links.", requester)
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
+
 	_, parts := mmmorty.ParseCommand(service, message)
 
 	authorParts := []string{}
