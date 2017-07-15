@@ -19,7 +19,9 @@ Quotes are stored by calling `@<botname> add quote <author> said <quote>`. For e
 
 <img src="docs/quotebot-example.png" height="350px">
 
-#### Setting Color
+There are hardcoded constants for the maximum word count of a quote as well as how many quotes can be stored, but these can be easily changed in the [Quote Plugin code](quoteplugin/quoteplugin.go). I may extract these into environment variables later.
+
+#### Setting Users' Colors With Roles
 
 Use `@<botname> color me <color>` so mmmorty can set your color. This requires a bit of setup:
 
