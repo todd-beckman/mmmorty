@@ -15,7 +15,7 @@ const stopManagingCommand = "stop managing"
 
 type ColorPlugin struct {
 	bot          *mmmorty.Bot
-	managedRoles map[string]bool `json: "managedRoles"`
+	ManagedRoles map[string]bool `json: "managedRoles"`
 }
 
 // Used to determine if the role is more than aesthetic
@@ -40,7 +40,7 @@ func doesRoleHaveAuth(permissions int) bool {
 
 func (p *ColorPlugin) printableRoles() []string {
 	printableRoles := []string{}
-	for role, isManaged := range p.managedRoles {
+	for role, isManaged := range p.ManagedRoles {
 		if isManaged {
 			printableRoles = append(printableRoles, role)
 		}
@@ -59,6 +59,7 @@ func (p *ColorPlugin) Load(bot *mmmorty.Bot, service mmmorty.Service, data []byt
 	if data != nil {
 		if err := json.Unmarshal(data, p); err != nil {
 			log.Println("Error loading data", err)
+			return err
 		}
 	}
 
@@ -76,11 +77,11 @@ func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message
 		return
 	}
 
-	if mmmorty.MatchesCommand(service, "color me", message) {
+	if mmmorty.MatchesCommand(service, colorCommand, message) {
 		p.handleColorMe(bot, service, message)
-	} else if mmmorty.MatchesCommand(service, "manage color", message) {
+	} else if mmmorty.MatchesCommand(service, manageColorCommand, message) {
 		p.handleManageColor(bot, service, message)
-	} else if mmmorty.MatchesCommand(service, "stop managing", message) {
+	} else if mmmorty.MatchesCommand(service, stopManagingCommand, message) {
 		p.handleStopManaging(bot, service, message)
 	}
 }
@@ -119,7 +120,7 @@ func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Service, m
 
 	userRoles := discord.UserRoles(message.Channel(), message.UserID())
 	for _, userRole := range userRoles {
-		for r, isManaged := range p.managedRoles {
+		for r, isManaged := range p.ManagedRoles {
 			if !isManaged {
 				continue
 			}
@@ -170,7 +171,7 @@ func (p *ColorPlugin) handleManageColor(bot *mmmorty.Bot, service mmmorty.Servic
 
 	for _, c := range parts[1:] {
 		color := strings.ToLower(c)
-		if p.managedRoles[color] {
+		if p.ManagedRoles[color] {
 			reply := fmt.Sprintf("Uh, %s, I am already managing %s", requester, color)
 			service.SendMessage(message.Channel(), reply)
 			continue
@@ -190,7 +191,7 @@ func (p *ColorPlugin) handleManageColor(bot *mmmorty.Bot, service mmmorty.Servic
 			continue
 		}
 
-		p.managedRoles[color] = true
+		p.ManagedRoles[color] = true
 	}
 
 	printableRoles := p.printableRoles()
@@ -219,13 +220,13 @@ func (p *ColorPlugin) handleStopManaging(bot *mmmorty.Bot, service mmmorty.Servi
 
 	for _, c := range parts[1:] {
 		color := strings.ToLower(c)
-		if !p.managedRoles[color] {
+		if !p.ManagedRoles[color] {
 			reply := fmt.Sprintf("Uh, %s, I'm not managing %s", requester, color)
 			service.SendMessage(message.Channel(), reply)
 			continue
 		}
 
-		delete(p.managedRoles, color)
+		delete(p.ManagedRoles, color)
 	}
 
 	printableRoles := p.printableRoles()
@@ -250,8 +251,7 @@ func (p *ColorPlugin) Name() string {
 
 // New will create a new Reminder plugin.
 func New() mmmorty.Plugin {
-	p := &ColorPlugin{
-		managedRoles: map[string]bool{},
+	return &ColorPlugin{
+		ManagedRoles: map[string]bool{},
 	}
-	return p
 }

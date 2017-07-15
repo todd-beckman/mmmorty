@@ -11,6 +11,7 @@ import (
 
 	"github.com/todd-beckman/mmmorty"
 	"github.com/todd-beckman/mmmorty/colorplugin"
+	"github.com/todd-beckman/mmmorty/quoteplugin"
 )
 
 var discordToken string
@@ -20,6 +21,11 @@ var discordApplicationClientID string
 var discordOwnerUserID string
 var discordShards int
 
+const (
+	OWNER_ENV = "DISCORD_OWNER"
+	TOKEN_ENV = "DISCORD_TOKEN"
+)
+
 func init() {
 	flag.StringVar(&discordToken, "discordtoken", "", "Discord token.")
 	flag.StringVar(&discordEmail, "discordemail", "", "Discord account email.")
@@ -28,6 +34,13 @@ func init() {
 	flag.StringVar(&discordApplicationClientID, "discordapplicationclientid", "", "Discord application client id.")
 	flag.IntVar(&discordShards, "discordshards", 1, "Number of discord shards.")
 	flag.Parse()
+
+	if discordToken == "" {
+		discordToken = os.Getenv(TOKEN_ENV)
+	}
+	if discordOwnerUserID == "" {
+		discordOwnerUserID = os.Getenv(OWNER_ENV)
+	}
 
 	rand.Seed(time.Now().UnixNano())
 }
@@ -62,6 +75,7 @@ func main() {
 
 		bot.RegisterPlugin(discord, cp)
 		bot.RegisterPlugin(discord, colorplugin.New())
+		bot.RegisterPlugin(discord, quoteplugin.New())
 	} else {
 		log.Println("(discordEmail and discordPassword) or discordToken is required.")
 		os.Exit(1)
