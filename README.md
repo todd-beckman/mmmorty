@@ -11,6 +11,14 @@ Check that one out. It's a really good example.
 
 Mmmorty is still alpha and so its featureset is fairly limited for now.
 
+#### Quotes
+
+Use `@<botname> quote me` to view one of the stored quotes.
+
+Quotes are stored by calling `@<botname> add quote <author> said <quote>`. For example:
+
+<img src="docs/quotebot-example.png" height="350px">
+
 #### Setting Color
 
 Use `@<botname> color me <color>` so mmmorty can set your color. This requires a bit of setup:
@@ -38,6 +46,8 @@ Mmmorty will refuse to assign roles which have any permissions applied or that a
 1. Run this bot. Use `make` to install mmmorty globally, and then run:
 
     `mmmorty -discordtoken <token> -discordowneruserid <your user id>`
+    
+  Alternatively you can set environment variables for `DISCORD_TOKEN` and `DISCORD_OWNER` so you only need to call `mmmorty` to run the program.
 
 ## Troubleshooting
 
