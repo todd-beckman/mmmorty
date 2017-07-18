@@ -11,6 +11,7 @@ import (
 
 	"github.com/todd-beckman/mmmorty"
 	"github.com/todd-beckman/mmmorty/colorplugin"
+	"github.com/todd-beckman/mmmorty/pickplugin"
 	"github.com/todd-beckman/mmmorty/quoteplugin"
 )
 
@@ -75,6 +76,7 @@ func main() {
 
 		bot.RegisterPlugin(discord, cp)
 		bot.RegisterPlugin(discord, colorplugin.New())
+		bot.RegisterPlugin(discord, pickplugin.New())
 		bot.RegisterPlugin(discord, quoteplugin.New())
 	} else {
 		log.Println("(discordEmail and discordPassword) or discordToken is required.")
