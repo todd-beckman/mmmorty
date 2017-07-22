@@ -15,12 +15,17 @@ import (
 	"github.com/todd-beckman/mmmorty/quoteplugin"
 )
 
-var discordToken string
-var discordEmail string
-var discordPassword string
-var discordApplicationClientID string
-var discordOwnerUserID string
-var discordShards int
+var (
+	discordToken               string
+	discordEmail               string
+	discordPassword            string
+	discordApplicationClientID string
+	discordOwnerUserID         string
+	discordShards              int
+	enableColor                bool
+	enablePicking              bool
+	enableQuotes               bool
+)
 
 const (
 	OWNER_ENV = "DISCORD_OWNER"
@@ -34,6 +39,9 @@ func init() {
 	flag.StringVar(&discordOwnerUserID, "discordowneruserid", "", "Discord owner user id.")
 	flag.StringVar(&discordApplicationClientID, "discordapplicationclientid", "", "Discord application client id.")
 	flag.IntVar(&discordShards, "discordshards", 1, "Number of discord shards.")
+	flag.BoolVar(&enableColor, "color", true, "Whether to enable setting colors")
+	flag.BoolVar(&enablePicking, "pick", true, "Whether to enable picking things")
+	flag.BoolVar(&enableQuotes, "quote", true, "Whether to enable quoting people")
 	flag.Parse()
 
 	if discordToken == "" {
@@ -75,9 +83,15 @@ func main() {
 		bot.RegisterService(discord)
 
 		bot.RegisterPlugin(discord, cp)
-		bot.RegisterPlugin(discord, colorplugin.New())
-		bot.RegisterPlugin(discord, pickplugin.New())
-		bot.RegisterPlugin(discord, quoteplugin.New())
+		if enableColor {
+			bot.RegisterPlugin(discord, colorplugin.New())
+		}
+		if enablePicking {
+			bot.RegisterPlugin(discord, pickplugin.New())
+		}
+		if enableQuotes {
+			bot.RegisterPlugin(discord, quoteplugin.New())
+		}
 	} else {
 		log.Println("(discordEmail and discordPassword) or discordToken is required.")
 		os.Exit(1)
