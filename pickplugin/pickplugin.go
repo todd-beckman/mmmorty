@@ -21,7 +21,7 @@ type PickPlugin struct {
 }
 
 func (p *PickPlugin) Help(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, detailed bool) []string {
-	return mmmorty.CommandHelp(service, pickCommand, "pick between <option> or <option> (or ...)",
+	return mmmorty.CommandHelp(service, pickCommand, "<option> or <option> (or ...)",
 		"asks Morty to pick something for you")
 }
 
