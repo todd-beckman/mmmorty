@@ -19,6 +19,8 @@ Use `@<botname> help` to view the commands.
 
 `@<botname> pick between <option> or <option> (or ...)` - asks Morty to pick something for you.
 
+If you want to opt out of this feature, start the bot with the `-pick=FALSE` command line flag.
+
 #### Quotes
 
 Use `@<botname> quote me` to view one of the stored quotes.
@@ -31,6 +33,8 @@ There are hardcoded constants for the maximum word count of a quote as well as h
 
 Quotes with links (quotes containing the string "http") will be rejected.
 
+If you want to opt out of this feature, start the bot with the `-quote=FALSE` command line flag.
+
 #### Setting Users' Colors With Roles
 
 Use `@<botname> color me <color>` so mmmorty can set your color. This requires a bit of setup:
@@ -42,6 +46,8 @@ Use `@<botname> color me <color>` so mmmorty can set your color. This requires a
 To stop managing colors, use `@<botname> stop managing <color list>`. This could be handy either when removing/renaming a role or elevating its permissions and invalidating its use as a color-only role.
 
 Mmmorty will refuse to assign roles which have any permissions applied or that are above it in the permissions list. It is expected, and recommended, to have colored roles function separately from user permissions.
+
+If you want to opt out of this feature, start the bot with the `-color=FALSE` command line flag.
 
 ## Setting Up
 
