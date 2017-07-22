@@ -34,7 +34,7 @@ type QuotePlugin struct {
 
 func (p *QuotePlugin) Help(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, detailed bool) []string {
 	help := mmmorty.CommandHelp(service, addQuoteCommand, "<author> said <quote>", "adds a quote for Morty to remember")
-	help = append(help, mmmorty.CommandHelp(service, quoteCommand, "quote me", "gets Morty to fetch one of his quotes at random.")[0])
+	help = append(help, mmmorty.CommandHelp(service, quoteCommand, "", "retrieves a quote at random.")[0])
 	return help
 }
 
@@ -69,6 +69,12 @@ func (p *QuotePlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message
 
 func (p *QuotePlugin) handleAddQuoteCommand(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
+
+	if service.IsPrivate(message) {
+		reply := fmt.Sprintf("Uh, %s, I can't add quotes privately.", requester)
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
 
 	if len(p.Quotes) >= maxQuoteCount {
 		reply := fmt.Sprintf("Uh, %s, I can't remember all these quotes. Rick might need to help get rid of some.", requester)

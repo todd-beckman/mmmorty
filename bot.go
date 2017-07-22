@@ -61,6 +61,7 @@ func (b *Bot) RegisterService(service Service) {
 		Service: service,
 		Plugins: make(map[string]Plugin, 0),
 	}
+	b.RegisterPlugin(service, NewHelpPlugin())
 }
 
 // RegisterPlugin registers a plugin on a service.

@@ -87,9 +87,15 @@ func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message
 }
 
 func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
-	_, parts := mmmorty.ParseCommand(service, message)
-
 	requester := fmt.Sprintf("<@%s>", message.UserID())
+
+	if service.IsPrivate(message) {
+		reply := fmt.Sprintf("Uh, %s, I cannot color you in private.", requester)
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
+
+	_, parts := mmmorty.ParseCommand(service, message)
 
 	if len(parts) == 1 {
 		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a color.", requester)
