@@ -49,7 +49,7 @@ func (p *ColorPlugin) printableRoles() []string {
 }
 
 func (p *ColorPlugin) Help(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, detailed bool) []string {
-	help := mmmorty.CommandHelp(service, colorCommand, "<color>", "assigns the desired color if it is avialable")
+	help := mmmorty.CommandHelp(service, colorCommand, "<color>", "assigns the desired color if it is available")
 	help = append(help, mmmorty.CommandHelp(service, manageColorCommand, "<color list>", "remembers each of these roles so they can be removed when a user changes color")[0])
 	help = append(help, mmmorty.CommandHelp(service, stopManagingCommand, "<color>", "stops managing the given color")[0])
 	return help
