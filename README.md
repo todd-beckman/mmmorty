@@ -11,6 +11,14 @@ Check that one out. It's a really good example.
 
 Mmmorty is still alpha and so its featureset is fairly limited for now.
 
+#### TLDR
+
+Use `@<botname> help` to view the commands.
+
+#### Picking things
+
+`@<botname> pick between <option> or <option> (or ...)` - asks Morty to pick something for you.
+
 #### Quotes
 
 Use `@<botname> quote me` to view one of the stored quotes.
