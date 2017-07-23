@@ -100,7 +100,7 @@ func (p *WarPlugin) startNotify(bot *mmmorty.Bot, service mmmorty.Service, messa
 	if duration == 1 {
 		minuteString = "minute"
 	}
-	reply := fmt.Sprintf("Sprint %s starts now and goes for %v %s! %s", name, notifyString, minuteString, notifyString)
+	reply := fmt.Sprintf("Sprint %s starts now and goes for %v %s! %s", name, duration, minuteString, notifyString)
 	service.SendMessage(war.Channel, reply)
 }
 
