@@ -12,7 +12,7 @@ import (
 
 const (
 	maxWordCount = 100
-	pickCommand  = "pick between"
+	pickCommand  = "choose"
 	pickTemplate = "Uh, I'll go with this one: %s"
 )
 
@@ -66,7 +66,7 @@ func (p *PickPlugin) handlePickCommand(bot *mmmorty.Bot, service mmmorty.Service
 	options := []string{}
 	currentOption := []string{}
 
-	for index, word := range parts[1:] { // first word is 'between' because 'pick between'
+	for index, word := range parts {
 		if index > maxWordCount {
 			reply := fmt.Sprintf("Uh, %s, that message is kind of long. Is there any way you can shorten it?", requester)
 			service.SendMessage(message.Channel(), reply)
@@ -89,7 +89,7 @@ func (p *PickPlugin) handlePickCommand(bot *mmmorty.Bot, service mmmorty.Service
 	options = append(options, strings.Join(currentOption, " "))
 
 	if len(options) < 2 {
-		reply := fmt.Sprintf("Uh, %s, I didn't get that. Maybe put `or` between option?", requester)
+		reply := fmt.Sprintf("Uh, %s, I didn't get that. Maybe put `or` between options?", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
