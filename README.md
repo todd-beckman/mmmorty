@@ -49,6 +49,16 @@ Mmmorty will refuse to assign roles which have any permissions applied or that a
 
 If you want to opt out of this feature, start the bot with the `-color=FALSE` command line flag.
 
+#### Timed Sprints
+
+Use `@<botname> start sprint at :XX for Y` to start a timed "sprint"/"word war". This feature is targetted more towards the WriMo community, for which timed writing sessions help motivate writing groups to be productive for a set amount of time, and then subsequently report their results. Various alerts will be sent and users can request to be pinged on these updates, so this kind of timer can certainly be used in other contexts merely by changing the output strings. How it works:
+
+1. Start a sprint. The `:XX` notation provides a timezone-agnostic time to start. `Y` is the number of minutes the sprint should last.
+2. Users can use the `join sprint` and `leave sprint` commands to add/remove themselves from the list of users that get pinged at each interval. The user that starts the sprint is added automatically.
+3. Users receive three updates: the one-minute-before warning, the start notification, and the end notification.
+
+Multiple simultaneous sprints can be run. Each one is given an ID number to help manage them. This feature is disabled by default, so you will need the `-war=TRUE` flag to enable it.
+
 ## Setting Up
 
 1. Set up a bot with discord. A good guide for this is [here](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token)
