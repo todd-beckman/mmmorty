@@ -1,4 +1,4 @@
-package quoteplugin
+package warplugin
 
 import (
 	"encoding/json"
@@ -41,7 +41,7 @@ type WarPlugin struct {
 
 func timeWithoutSeconds() time.Time {
 	now := time.Now()
-	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0, now.Location)
+	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0, now.Location())
 }
 
 func stringifySprinters(war *War) string {
@@ -53,50 +53,53 @@ func stringifySprinters(war *War) string {
 }
 
 func (p *WarPlugin) pickName() string {
-	var name string
-	for p.Wars[name] != nil {
-		name = fmt.Sprintf(
-			"%s%s%s",
-			rand.Intn(10),
-			rand.Intn(10),
-			rand.Intn(10),
-		)
+	name := fmt.Sprintf(
+		"%v%v%v",
+		rand.Intn(10),
+		rand.Intn(10),
+		rand.Intn(10),
+	)
+	_, ok := p.Wars[name]
+	if ok {
+		fmt.Println(name)
+		fmt.Println("trying again.")
+		return p.pickName()
 	}
 
 	return name
 }
 
 func (p *WarPlugin) alertNotify(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, name string) {
-	war, ok := p.Wars[war]
+	war, ok := p.Wars[name]
 	if !ok {
 		return
 	}
 
 	notifyString := stringifySprinters(war)
 	reply := fmt.Sprintf("Sprint %s is starting in one minute! %s", name, notifyString)
-	service.SendMessage(war.Channel)
+	service.SendMessage(war.Channel, reply)
 }
 
 func (p *WarPlugin) startNotify(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, name string) {
-	war, ok := p.Wars[war]
+	war, ok := p.Wars[name]
 	if !ok {
 		return
 	}
 
 	notifyString := stringifySprinters(war)
 	reply := fmt.Sprintf("Sprint %s starts now! %s", name, notifyString)
-	service.SendMessage(war.Channel)
+	service.SendMessage(war.Channel, reply)
 }
 
 func (p *WarPlugin) endNotify(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, name string) {
-	war, ok := p.Wars[war]
+	war, ok := p.Wars[name]
 	if !ok {
 		return
 	}
 
 	notifyString := stringifySprinters(war)
 	reply := fmt.Sprintf("Sprint %s has ended! %s", name, notifyString)
-	service.SendMessage(war.Channel)
+	service.SendMessage(war.Channel, reply)
 
 	delete(p.Wars, name)
 }
@@ -137,6 +140,12 @@ func (p *WarPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message m
 
 	if mmmorty.MatchesCommand(service, startWarCommand, message) {
 		p.handleStartWarCommand(bot, service, message)
+	} else if mmmorty.MatchesCommand(service, joinWarCommand, message) {
+		p.handleJoinWarCommand(bot, service, message)
+	} else if mmmorty.MatchesCommand(service, leaveWarCommand, message) {
+		p.handleLeaveWarCommand(bot, service, message)
+	} else if mmmorty.MatchesCommand(service, endWarCommand, message) {
+		p.handleEndWarCommand(bot, service, message)
 	}
 }
 
@@ -149,11 +158,6 @@ func (p *WarPlugin) handleStartWarCommand(bot *mmmorty.Bot, service mmmorty.Serv
 		return
 	}
 
-	if len(p.Quotes) >= maxQuoteCount {
-		reply := fmt.Sprintf("Uh, %s, I can't remember all these sprints. Could you end some first?", requester)
-		service.SendMessage(message.Channel(), reply)
-		return
-	}
 	_, parts := mmmorty.ParseCommand(service, message)
 
 	// "sprint at :XX for Y (mins)"
@@ -214,7 +218,7 @@ func (p *WarPlugin) handleStartWarCommand(bot *mmmorty.Bot, service mmmorty.Serv
 	minutesToAlert := minutes - nowMinutes - 1
 	var alertTimer *time.Timer
 	if minutesToAlert > 0 {
-		alertingIn := time.ParseDuration(fmt.Sprintf("%sm", minutesToAlert))
+		alertingIn, _ := time.ParseDuration(fmt.Sprintf("%vm", minutesToAlert))
 		alertTimer = time.AfterFunc(alertingIn, func() {
 			p.alertNotify(bot, service, message, name)
 		})
@@ -222,14 +226,14 @@ func (p *WarPlugin) handleStartWarCommand(bot *mmmorty.Bot, service mmmorty.Serv
 
 	// when to give the starting alert
 	minutesToStart := minutes - nowMinutes
-	startingIn := time.ParseDuration(fmt.Sprintf("%sm", minutesToStart))
+	startingIn, _ := time.ParseDuration(fmt.Sprintf("%vm", minutesToStart))
 	startTimer := time.AfterFunc(startingIn, func() {
 		p.startNotify(bot, service, message, name)
 	})
 
 	// when to give the ending alert
-	minutesToEnd := minutesFromNow + duration
-	endingIn := time.ParseDuration(fmt.Sprintf("%sm", minutesToEnd))
+	minutesToEnd := minutesToStart + duration
+	endingIn, _ := time.ParseDuration(fmt.Sprintf("%vm", minutesToEnd))
 	endTimer := time.AfterFunc(endingIn, func() {
 		p.endNotify(bot, service, message, name)
 	})
@@ -240,7 +244,7 @@ func (p *WarPlugin) handleStartWarCommand(bot *mmmorty.Bot, service mmmorty.Serv
 		Duration:  duration,
 		Name:      name,
 		Sprinters: []string{message.UserID()},
-		Start:     startingTime.Unix(),
+		Start:     now.Add(startingIn).Unix(),
 
 		alertTimer: alertTimer,
 		startTimer: startTimer,
@@ -248,7 +252,97 @@ func (p *WarPlugin) handleStartWarCommand(bot *mmmorty.Bot, service mmmorty.Serv
 	}
 	p.Wars[name] = war
 
-	reply := fmt.Sprintf("Ok, %s, you got it! I added you to this sprint. Use `%s %s` to get updates, `%s %s` to stop getting them, and `%s %s` to cancel this sprint.")
+	reply := fmt.Sprintf(
+		"Ok, %s, you got it! I added you to this sprint. Use `%s %s` to get updates, `%s %s` to stop getting them, and `%s %s` to cancel this sprint.",
+		requester,
+		joinWarCommand, name,
+		leaveWarCommand, name,
+		endWarCommand, name,
+	)
+	service.SendMessage(message.Channel(), reply)
+}
+
+func (p *WarPlugin) handleJoinWarCommand(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+	requester := fmt.Sprintf("<@%s>", message.UserID())
+
+	_, parts := mmmorty.ParseCommand(service, message)
+	if len(parts) < 2 {
+		reply := fmt.Sprintf("Uh, %s, what was the sprint you wanted to join?", requester)
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
+
+	name := parts[1]
+
+	war, ok := p.Wars[name]
+	if !ok {
+		reply := fmt.Sprintf("Uh, %s, I don't see a sprint by that name.", requester)
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
+
+	isInWar := false
+	for _, sprinter := range war.Sprinters {
+		if sprinter == message.UserID() {
+			isInWar = true
+			break
+		}
+	}
+
+	if isInWar {
+		reply := fmt.Sprintf("Looks like you are in that sprint already %s. You should be good to go.", requester)
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
+
+	war.Sprinters = append(war.Sprinters, message.UserID())
+
+	reply := fmt.Sprintf("I added you to the sprint, %s. Good luck!", requester)
+	service.SendMessage(message.Channel(), reply)
+}
+
+func (p *WarPlugin) handleLeaveWarCommand(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+	requester := fmt.Sprintf("<@%s>", message.UserID())
+
+	_, parts := mmmorty.ParseCommand(service, message)
+	if len(parts) < 2 {
+		reply := fmt.Sprintf("Uh, %s, what was the sprint you wanted to leave?", requester)
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
+
+	name := parts[1]
+
+	war, ok := p.Wars[name]
+	if !ok {
+		reply := fmt.Sprintf("Uh, %s, I don't see a sprint by that name.", requester)
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
+
+	index := -1
+	for i, sprinter := range war.Sprinters {
+		if sprinter == message.UserID() {
+			index = i
+			break
+		}
+	}
+
+	if index == -1 {
+		reply := fmt.Sprintf("Uh, %s, you are not in that sprint.", requester)
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
+
+	if len(war.Sprinters)-1 == index {
+		war.Sprinters = war.Sprinters[:index]
+	} else if index == 0 {
+		war.Sprinters = war.Sprinters[index+1:]
+	} else {
+		war.Sprinters = append(war.Sprinters[:index], war.Sprinters[index+1:]...)
+	}
+
+	reply := fmt.Sprintf("I removed you from %s.", name)
 	service.SendMessage(message.Channel(), reply)
 }
 
@@ -266,21 +360,17 @@ func (p *WarPlugin) handleEndWarCommand(bot *mmmorty.Bot, service mmmorty.Servic
 
 	war, ok := p.Wars[name]
 	if !ok {
-		reply := fmt.Sprintf("Uh, %s, I don't see a war by that name.", requester)
+		reply := fmt.Sprintf("Uh, %s, I don't see a sprint by that name.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
 
-	quoteCount := len(p.Quotes)
-	if quoteCount == 0 {
-		reply := fmt.Sprintf("Uh, %s, I don't know any quotes yet. Maybe you could add them?", requester)
-		service.SendMessage(message.Channel(), reply)
-		return
-	}
+	war.alertTimer.Stop()
+	war.startTimer.Stop()
+	war.endTimer.Stop()
+	delete(p.Wars, name)
 
-	index := rand.Intn(quoteCount)
-	quote := p.Quotes[index]
-	reply := fmt.Sprintf(quoteTemplate, quote.Author, quote.Quote)
+	reply := fmt.Sprintf("Sprint %s was ended.", name)
 	service.SendMessage(message.Channel(), reply)
 }
 
@@ -293,9 +383,11 @@ func (p *WarPlugin) Stats(bot *mmmorty.Bot, service mmmorty.Service, message mmm
 }
 
 func (p *WarPlugin) Name() string {
-	return "Quote"
+	return "War"
 }
 
 func New() mmmorty.Plugin {
-	return &WarPlugin{}
+	return &WarPlugin{
+		Wars: map[string]*War{},
+	}
 }
