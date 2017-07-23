@@ -65,7 +65,7 @@ func (p *ColorPlugin) Load(bot *mmmorty.Bot, service mmmorty.Service, data []byt
 }
 
 func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
-	defer mmmorty.MessageRecover()
+	defer bot.MessageRecover(service, message.Channel())
 
 	if service.Name() != mmmorty.DiscordServiceName {
 		return
