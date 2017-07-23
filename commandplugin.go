@@ -132,7 +132,7 @@ func (p *CommandPlugin) Help(bot *Bot, service Service, message Message, detaile
 // Message handler.
 // Iterates over the registered commands and executes them if the message matches.
 func (p *CommandPlugin) Message(bot *Bot, service Service, message Message) {
-	defer MessageRecover()
+	defer bot.MessageRecover(service, message.Channel())
 	if !service.IsMe(message) {
 		for commandString, command := range p.commands {
 			if MatchesCommand(service, commandString, message) {

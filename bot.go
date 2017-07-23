@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -31,9 +32,17 @@ type Bot struct {
 }
 
 // MessageRecover is the default panic handler
-func MessageRecover() {
+func (b *Bot) MessageRecover(service Service, channel string) {
 	if r := recover(); r != nil {
+		panic := fmt.Sprintf("%s", r)
+		// log first
+		log.Println(panic)
 		log.Println("Recovered:", string(debug.Stack()))
+
+		// notify owner
+		discord := service.(*Discord)
+		owner := fmt.Sprintf("<@%s>", discord.OwnerUserID)
+		service.SendMessage(channel, fmt.Sprintf("%s: Something went wrong. Summary: %s", owner, panic))
 	}
 }
 
