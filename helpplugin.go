@@ -47,7 +47,7 @@ func (p *helpPlugin) Help(bot *Bot, service Service, message Message, detailed b
 	help := []string{}
 
 	if len(commands) > 0 {
-		help = append(help, CommandHelp(service, helpCommand, "[topic]", fmt.Sprintf("Returns this information."))[0])
+		help = append(help, CommandHelp(service, helpCommand, "topic", "Posts this information.")[0])
 	}
 
 	return help
