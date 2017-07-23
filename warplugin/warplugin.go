@@ -76,7 +76,14 @@ func (p *WarPlugin) alertNotify(bot *mmmorty.Bot, service mmmorty.Service, messa
 	}
 
 	notifyString := stringifySprinters(war)
-	reply := fmt.Sprintf("Sprint %s is starting in one minute! %s", name, notifyString)
+
+	duration := war.Duration
+	minuteString := "minutes"
+	if duration == 1 {
+		minuteString = "minute"
+	}
+
+	reply := fmt.Sprintf("Sprint %s is starting in one minute, when it will go for %v %s! %s", name, duration, minuteString, notifyString)
 	service.SendMessage(war.Channel, reply)
 }
 
@@ -87,7 +94,13 @@ func (p *WarPlugin) startNotify(bot *mmmorty.Bot, service mmmorty.Service, messa
 	}
 
 	notifyString := stringifySprinters(war)
-	reply := fmt.Sprintf("Sprint %s starts now! %s", name, notifyString)
+
+	duration := war.Duration
+	minuteString := "minutes"
+	if duration == 1 {
+		minuteString = "minute"
+	}
+	reply := fmt.Sprintf("Sprint %s starts now and goes for %v %s! %s", name, notifyString, minuteString, notifyString)
 	service.SendMessage(war.Channel, reply)
 }
 

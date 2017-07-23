@@ -17,7 +17,7 @@ Use `@<botname> help` to view the commands.
 
 #### Picking things
 
-`@<botname> pick between <option> or <option> (or ...)` - asks Morty to pick something for you.
+`@<botname> choose <option> or <option> (or ...)` - asks Morty to pick something for you.
 
 If you want to opt out of this feature, start the bot with the `-pick=FALSE` command line flag.
 
