@@ -21,8 +21,8 @@ type PickPlugin struct {
 }
 
 func (p *PickPlugin) Help(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, detailed bool) []string {
-	return mmmorty.CommandHelp(service, pickCommand, "<option> or <option> (or ...)",
-		"asks Morty to pick something for you")
+	return mmmorty.CommandHelp(service, pickCommand, "option 1 or option 2 or ...",
+		"asks Morty to pick between an arbitrary number of things for you")
 }
 
 func (p *PickPlugin) Load(bot *mmmorty.Bot, service mmmorty.Service, data []byte) error {

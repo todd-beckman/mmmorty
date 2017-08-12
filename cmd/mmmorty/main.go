@@ -12,6 +12,7 @@ import (
 	"github.com/todd-beckman/mmmorty"
 	"github.com/todd-beckman/mmmorty/colorplugin"
 	"github.com/todd-beckman/mmmorty/pickplugin"
+	"github.com/todd-beckman/mmmorty/promptplugin"
 	"github.com/todd-beckman/mmmorty/quoteplugin"
 	"github.com/todd-beckman/mmmorty/warplugin"
 )
@@ -26,6 +27,7 @@ var (
 	enableColor                bool
 	enablePicking              bool
 	enableQuotes               bool
+	enablePrompts              bool
 	enableWars                 bool
 )
 
@@ -44,6 +46,7 @@ func init() {
 	flag.BoolVar(&enableColor, "color", true, "Whether to enable setting colors")
 	flag.BoolVar(&enablePicking, "pick", true, "Whether to enable picking things")
 	flag.BoolVar(&enableQuotes, "quote", true, "Whether to enable quoting people")
+	flag.BoolVar(&enablePrompts, "prompt", true, "Whether to enable plot prompts")
 	flag.BoolVar(&enableWars, "war", false, "Whether to enable timed word wars")
 	flag.Parse()
 
@@ -94,6 +97,9 @@ func main() {
 		}
 		if enableQuotes {
 			bot.RegisterPlugin(discord, quoteplugin.New())
+		}
+		if enablePrompts {
+			bot.RegisterPlugin(discord, promptplugin.New())
 		}
 		if enableWars {
 			bot.RegisterPlugin(discord, warplugin.New())

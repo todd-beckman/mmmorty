@@ -33,7 +33,7 @@ type QuotePlugin struct {
 }
 
 func (p *QuotePlugin) Help(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, detailed bool) []string {
-	help := mmmorty.CommandHelp(service, addQuoteCommand, "<author> said <quote>", "adds a quote for Morty to remember")
+	help := mmmorty.CommandHelp(service, addQuoteCommand, "somebody said some quote", "adds a quote for Morty to remember")
 	help = append(help, mmmorty.CommandHelp(service, quoteCommand, "", "retrieves a quote at random.")[0])
 	return help
 }

@@ -49,7 +49,7 @@ func (p *ColorPlugin) printableRoles() []string {
 }
 
 func (p *ColorPlugin) Help(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, detailed bool) []string {
-	help := mmmorty.CommandHelp(service, colorCommand, "<color>", "assigns the desired color if it is available")
+	help := mmmorty.CommandHelp(service, colorCommand, "color", "assigns the desired color if it is available")
 	return help
 }
 
