@@ -35,6 +35,18 @@ Quotes with links (quotes containing the string "http") will be rejected.
 
 If you want to opt out of this feature, start the bot with the `-quote=FALSE` command line flag.
 
+#### Plot Twists
+
+Plot twists work the same as Quotes except that they do not have an associated author. They are handy for users to submit ideas for arbitrary plot twists and prompts to help with storywriting. They are added with this:
+
+    @<botname> add plot twist <some twist>
+
+To retrieve twists:
+
+    @<botname> plot twist
+
+Twists are subject to the same restriction as quotes.
+
 #### Setting Users' Colors With Roles
 
 Use `@<botname> color me <color>` so mmmorty can set your color. This requires a bit of setup:

@@ -61,8 +61,6 @@ func (p *WarPlugin) pickName() string {
 	)
 	_, ok := p.Wars[name]
 	if ok {
-		fmt.Println(name)
-		fmt.Println("trying again.")
 		return p.pickName()
 	}
 
@@ -120,11 +118,11 @@ func (p *WarPlugin) endNotify(bot *mmmorty.Bot, service mmmorty.Service, message
 func (p *WarPlugin) Help(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, detailed bool) []string {
 	help := mmmorty.CommandHelp(service, startWarCommand,
 		"at :XX for Y (mins)", "starts a sprint starting when the minute hand points to XX and lasting for Y minutes")
-	help = append(help, mmmorty.CommandHelp(service, endWarCommand, "<id>",
+	help = append(help, mmmorty.CommandHelp(service, endWarCommand, "ID",
 		"Ends the sprint with the given name.")[0])
-	help = append(help, mmmorty.CommandHelp(service, joinWarCommand, "<id>",
+	help = append(help, mmmorty.CommandHelp(service, joinWarCommand, "ID",
 		"Adds you to the list of people to notify for the given sprint.")[0])
-	help = append(help, mmmorty.CommandHelp(service, leaveWarCommand, "<id>",
+	help = append(help, mmmorty.CommandHelp(service, leaveWarCommand, "ID",
 		"Removes you from the list of people to notify for the given sprint.")[0])
 	return help
 }
