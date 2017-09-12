@@ -206,6 +206,7 @@ func (p *WarPlugin) handleStartWarCommand(bot *mmmorty.Bot, service mmmorty.Serv
 	if duration > 180 {
 		reply := fmt.Sprintf("Gee, %s, I don't know if Rick will let me keep a sprint going for that long.", requester)
 		service.SendMessage(message.Channel(), reply)
+		return
 	}
 
 	now := timeWithoutSeconds()
