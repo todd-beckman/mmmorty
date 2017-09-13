@@ -172,14 +172,25 @@ func (p *WarPlugin) handleStartWarCommand(bot *mmmorty.Bot, service mmmorty.Serv
 	_, parts := mmmorty.ParseCommand(service, message)
 
 	// "sprint at :XX for Y (mins)"
-	if len(parts) < 5 || parts[1] != "at" || parts[3] != "for" {
+	if len(parts) < 5 || (parts[1] != "at" && parts[1] != "for") || (parts[3] != "at" && parts[3] != "for") {
 		reply := fmt.Sprintf("Uh, %s, I don't quite know what you mean. Have you tried `%s at :XX for Y (mins)`?", requester, startWarCommand)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
 
-	// get the :XX minutes portion
-	requestedTime := parts[2]
+	var requestedTime, requestedDuration string
+	if parts[1] == "at" && parts[3] == "for" {
+		requestedTime = parts[2]
+		requestedDuration = parts[4]
+	} else if parts[1] == "for" && parts[3] == "at" {
+		requestedDuration = parts[2]
+		requestedTime = parts[4]
+	} else {
+		reply := fmt.Sprintf("Uh, %s, I don't quite know what you mean. Have you tried `%s at :XX for Y (mins)`?", requester, startWarCommand)
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
+
 	if requestedTime[0] == ':' {
 		requestedTime = requestedTime[1:]
 	}
@@ -195,8 +206,6 @@ func (p *WarPlugin) handleStartWarCommand(bot *mmmorty.Bot, service mmmorty.Serv
 		return
 	}
 
-	// get the Y (mins) portion
-	requestedDuration := parts[4]
 	duration, err := strconv.Atoi(requestedDuration)
 	if err != nil {
 		reply := fmt.Sprintf("Uh, %s, that duration doesn't make sense. A number for the minutes should work fine.", requester)
