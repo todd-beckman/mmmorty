@@ -68,12 +68,6 @@ func (p *PromptPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, messag
 func (p *PromptPlugin) handleAddPromptCommand(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
-	if service.IsPrivate(message) {
-		reply := fmt.Sprintf("Uh, %s, I can't add prompts privately.", requester)
-		service.SendMessage(message.Channel(), reply)
-		return
-	}
-
 	if len(p.Prompts) >= maxPromptCount {
 		reply := fmt.Sprintf("Uh, %s, I can't remember all these prompts. Rick might need to help get rid of some.", requester)
 		service.SendMessage(message.Channel(), reply)
