@@ -11,6 +11,7 @@ import (
 
 	"github.com/todd-beckman/mmmorty"
 	"github.com/todd-beckman/mmmorty/colorplugin"
+	"github.com/todd-beckman/mmmorty/diceplugin"
 	"github.com/todd-beckman/mmmorty/pickplugin"
 	"github.com/todd-beckman/mmmorty/promptplugin"
 	"github.com/todd-beckman/mmmorty/quoteplugin"
@@ -25,6 +26,7 @@ var (
 	discordOwnerUserID         string
 	discordShards              int
 	enableColor                bool
+	enableDice                 bool
 	enablePicking              bool
 	enableQuotes               bool
 	enablePrompts              bool
@@ -44,6 +46,7 @@ func init() {
 	flag.StringVar(&discordApplicationClientID, "discordapplicationclientid", "", "Discord application client id.")
 	flag.IntVar(&discordShards, "discordshards", 1, "Number of discord shards.")
 	flag.BoolVar(&enableColor, "color", true, "Whether to enable setting colors")
+	flag.BoolVar(&enableDice, "dice", true, "Whether to enable rolling dice")
 	flag.BoolVar(&enablePicking, "pick", true, "Whether to enable picking things")
 	flag.BoolVar(&enableQuotes, "quote", true, "Whether to enable quoting people")
 	flag.BoolVar(&enablePrompts, "prompt", true, "Whether to enable plot prompts")
@@ -91,6 +94,9 @@ func main() {
 		bot.RegisterPlugin(discord, cp)
 		if enableColor {
 			bot.RegisterPlugin(discord, colorplugin.New())
+		}
+		if enableDice {
+			bot.RegisterPlugin(discord, diceplugin.New())
 		}
 		if enablePicking {
 			bot.RegisterPlugin(discord, pickplugin.New())
