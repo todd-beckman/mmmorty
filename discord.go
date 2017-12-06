@@ -360,7 +360,7 @@ func (d *Discord) IsBotOwner(message Message) bool {
 // IsPrivate returns whether or not a message was private.
 func (d *Discord) IsPrivate(message Message) bool {
 	c, err := d.Channel(message.Channel())
-	return err == nil && c.IsPrivate
+	return err == nil && c.Type == 1
 }
 
 // IsChannelOwner returns whether or not the sender of a message is a moderator.
