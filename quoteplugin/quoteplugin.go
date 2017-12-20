@@ -135,6 +135,11 @@ func (p *QuotePlugin) handleAddQuoteCommand(bot *mmmorty.Bot, service mmmorty.Di
 		Quote:  quote,
 	}
 
+	if p.Quotes == nil {
+		p.Quotes = map[string][]Quote{
+			guildID: []Quote{},
+		}
+	}
 	if p.Quotes[guildID] == nil {
 		p.Quotes[guildID] = []Quote{}
 	}

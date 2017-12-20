@@ -29,7 +29,7 @@ type Prompt struct {
 // PromptPlugin is the save structure of this plugin
 type PromptPlugin struct {
 	bot     *mmmorty.Bot
-	Prompts []Prompt `json:"prompts"`
+	Prompts map[string][]Prompt `json:"prompts"`
 }
 
 // Help gets the usage for this plugin
@@ -59,17 +59,27 @@ func (p *PromptPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, messag
 		return
 	}
 
+	channelID := message.Channel()
+	discordChannel, err := service.Channel(channelID)
+	if err != nil {
+		requester := fmt.Sprintf("<@%s>", message.UserID())
+		reply := fmt.Sprintf("Uh, %s, something went figuring out your server.", requester)
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
+	guildID := discordChannel.GuildID
+
 	if mmmorty.MatchesCommand(service, addPromptCommand, message) {
-		p.handleAddPromptCommand(bot, service, message)
+		p.handleAddPromptCommand(bot, service, message, guildID)
 	} else if mmmorty.MatchesCommand(service, promptCommand, message) {
-		p.handlePromptCommand(bot, service, message)
+		p.handlePromptCommand(bot, service, message, guildID)
 	}
 }
 
-func (p *PromptPlugin) handleAddPromptCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
+func (p *PromptPlugin) handleAddPromptCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
-	if len(p.Prompts) >= maxPromptCount {
+	if len(p.Prompts[guildID]) >= maxPromptCount {
 		reply := fmt.Sprintf("Uh, %s, I can't remember all these prompts. Rick might need to help get rid of some.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
@@ -105,16 +115,25 @@ func (p *PromptPlugin) handleAddPromptCommand(bot *mmmorty.Bot, service mmmorty.
 		Prompt: plotPrompt,
 	}
 
-	p.Prompts = append(p.Prompts, newPrompt)
+	if p.Prompts == nil {
+		p.Prompts = map[string][]Prompt{
+			guildID: []Prompt{},
+		}
+	}
+	if p.Prompts[guildID] == nil {
+		p.Prompts[guildID] = []Prompt{}
+	}
+
+	p.Prompts[guildID] = append(p.Prompts[guildID], newPrompt)
 
 	reply := fmt.Sprintf("Ok, %s, you got it! I will try to remember that one.", requester)
 	service.SendMessage(message.Channel(), reply)
 }
 
-func (p *PromptPlugin) handlePromptCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
+func (p *PromptPlugin) handlePromptCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
-	promptCount := len(p.Prompts)
+	promptCount := len(p.Prompts[guildID])
 	if promptCount == 0 {
 		reply := fmt.Sprintf("Uh, %s, I don't know any prompts yet. Maybe you could add them?", requester)
 		service.SendMessage(message.Channel(), reply)
@@ -122,7 +141,7 @@ func (p *PromptPlugin) handlePromptCommand(bot *mmmorty.Bot, service mmmorty.Dis
 	}
 
 	index := rand.Intn(promptCount)
-	prompt := p.Prompts[index]
+	prompt := p.Prompts[guildID][index]
 	reply := fmt.Sprintf(promptTemplate, prompt.Prompt)
 	service.SendMessage(message.Channel(), reply)
 }
