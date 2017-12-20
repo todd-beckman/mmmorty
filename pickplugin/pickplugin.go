@@ -16,16 +16,19 @@ const (
 	pickTemplate = "Uh, I'll go with this one: %s"
 )
 
+// PickPlugin is a the save structure for this plugin
 type PickPlugin struct {
 	bot *mmmorty.Bot
 }
 
-func (p *PickPlugin) Help(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, detailed bool) []string {
+// Help gets the usage for this plugin
+func (p *PickPlugin) Help(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, detailed bool) []string {
 	return mmmorty.CommandHelp(service, pickCommand, "option 1 or option 2 or ...",
 		"asks Morty to pick between an arbitrary number of things for you")
 }
 
-func (p *PickPlugin) Load(bot *mmmorty.Bot, service mmmorty.Service, data []byte) error {
+// Load loads the plugin from the given data
+func (p *PickPlugin) Load(bot *mmmorty.Bot, service mmmorty.Discord, data []byte) error {
 	if data != nil {
 		if err := json.Unmarshal(data, p); err != nil {
 			log.Println("Error loading data", err)
@@ -36,12 +39,9 @@ func (p *PickPlugin) Load(bot *mmmorty.Bot, service mmmorty.Service, data []byte
 	return nil
 }
 
-func (p *PickPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+// Message is the command handler for this plugin
+func (p *PickPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	defer bot.MessageRecover(service, message.Channel())
-
-	if service.Name() != mmmorty.DiscordServiceName {
-		return
-	}
 
 	if service.IsMe(message) {
 		return
@@ -52,7 +52,7 @@ func (p *PickPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message 
 	}
 }
 
-func (p *PickPlugin) handlePickCommand(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+func (p *PickPlugin) handlePickCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	if strings.Contains(message.Message(), "http") {
@@ -100,18 +100,17 @@ func (p *PickPlugin) handlePickCommand(bot *mmmorty.Bot, service mmmorty.Service
 	service.SendMessage(message.Channel(), reply)
 }
 
+// Save saves the plugin's state to file
 func (p *PickPlugin) Save() ([]byte, error) {
 	return json.Marshal(p)
 }
 
-func (p *PickPlugin) Stats(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) []string {
-	return []string{}
-}
-
+// Name gets the name of the plugin for saving purposes
 func (p *PickPlugin) Name() string {
 	return "Pick"
 }
 
+// New creates a new instance of this plugin
 func New() mmmorty.Plugin {
 	return &PickPlugin{}
 }

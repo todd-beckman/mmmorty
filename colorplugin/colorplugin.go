@@ -13,9 +13,10 @@ const colorCommand = "color me"
 const manageColorCommand = "manage color"
 const stopManagingCommand = "stop managing"
 
+// ColorPlugin is the save data for this plugin
 type ColorPlugin struct {
 	bot          *mmmorty.Bot
-	ManagedRoles map[string]bool `json: "managedRoles"`
+	ManagedRoles map[string]bool `json:"managedRoles"`
 }
 
 // Used to determine if the role is more than aesthetic
@@ -48,12 +49,14 @@ func (p *ColorPlugin) printableRoles() []string {
 	return printableRoles
 }
 
-func (p *ColorPlugin) Help(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, detailed bool) []string {
+// Help gets the usage for this plugin
+func (p *ColorPlugin) Help(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, detailed bool) []string {
 	help := mmmorty.CommandHelp(service, colorCommand, "color", "assigns the desired color if it is available")
 	return help
 }
 
-func (p *ColorPlugin) Load(bot *mmmorty.Bot, service mmmorty.Service, data []byte) error {
+// Load loads this plugin from the given data
+func (p *ColorPlugin) Load(bot *mmmorty.Bot, service mmmorty.Discord, data []byte) error {
 	if data != nil {
 		if err := json.Unmarshal(data, p); err != nil {
 			log.Println("Error loading data", err)
@@ -64,7 +67,8 @@ func (p *ColorPlugin) Load(bot *mmmorty.Bot, service mmmorty.Service, data []byt
 	return nil
 }
 
-func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+// Message is the command handler for this plugin
+func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	defer bot.MessageRecover(service, message.Channel())
 
 	if service.Name() != mmmorty.DiscordServiceName {
@@ -84,7 +88,7 @@ func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message
 	}
 }
 
-func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	if service.IsPrivate(message) {
@@ -107,8 +111,7 @@ func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Service, m
 
 	color := strings.ToLower(parts[1])
 
-	discord := service.(*mmmorty.Discord)
-	role := discord.GetRoleByName(message.Channel(), color)
+	role := service.GetRoleByName(message.Channel(), color)
 
 	if role == nil {
 		reply := fmt.Sprintf("Uh, %s, I can't find a role called %s", requester, color)
@@ -122,16 +125,16 @@ func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Service, m
 		return
 	}
 
-	userRoles := discord.UserRoles(message.Channel(), message.UserID())
+	userRoles := service.UserRoles(message.Channel(), message.UserID())
 	for _, userRole := range userRoles {
 		for r, isManaged := range p.ManagedRoles {
 			if !isManaged {
 				continue
 			}
 
-			managedRole := discord.GetRoleByName(message.Channel(), r)
+			managedRole := service.GetRoleByName(message.Channel(), r)
 			if userRole == managedRole.ID {
-				ok := discord.GuildMemberRoleRemove(message.Channel(), message.UserID(), userRole)
+				ok := service.GuildMemberRoleRemove(message.Channel(), message.UserID(), userRole)
 				if !ok {
 					reply := fmt.Sprintf("Uh, %s, something went wrong. Are you sure I can manage %v?", requester, color)
 					service.SendMessage(message.Channel(), reply)
@@ -141,7 +144,7 @@ func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Service, m
 		}
 	}
 
-	ok := discord.GuildMemberRoleAdd(message.Channel(), message.UserID(), role.ID)
+	ok := service.GuildMemberRoleAdd(message.Channel(), message.UserID(), role.ID)
 	if !ok {
 		reply := fmt.Sprintf("Uh, %s, something went wrong. Are you sure I can let you be %v?", requester, color)
 		service.SendMessage(message.Channel(), reply)
@@ -154,12 +157,10 @@ func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Service, m
 
 }
 
-func (p *ColorPlugin) handleManageColor(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
-	discord := service.(*mmmorty.Discord)
-
+func (p *ColorPlugin) handleManageColor(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
-	if message.UserID() != discord.OwnerUserID {
+	if message.UserID() != service.OwnerUserID {
 		reply := fmt.Sprintf("Uh, %s, I think you need to ask my Rick for that command.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
@@ -181,7 +182,7 @@ func (p *ColorPlugin) handleManageColor(bot *mmmorty.Bot, service mmmorty.Servic
 			continue
 		}
 
-		role := discord.GetRoleByName(message.Channel(), color)
+		role := service.GetRoleByName(message.Channel(), color)
 
 		if role == nil {
 			reply := fmt.Sprintf("Uh, %s, I can't find a role called %s", requester, color)
@@ -203,12 +204,10 @@ func (p *ColorPlugin) handleManageColor(bot *mmmorty.Bot, service mmmorty.Servic
 	service.SendMessage(message.Channel(), reply)
 }
 
-func (p *ColorPlugin) handleStopManaging(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
-	discord := service.(*mmmorty.Discord)
-
+func (p *ColorPlugin) handleStopManaging(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
-	if message.UserID() != discord.OwnerUserID {
+	if message.UserID() != service.OwnerUserID {
 		reply := fmt.Sprintf("Uh, %s, I think you need to ask my Rick for that command.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
@@ -241,11 +240,6 @@ func (p *ColorPlugin) handleStopManaging(bot *mmmorty.Bot, service mmmorty.Servi
 // Save will save plugin state to a byte array.
 func (p *ColorPlugin) Save() ([]byte, error) {
 	return json.Marshal(p)
-}
-
-// Stats will return the stats for a plugin.
-func (p *ColorPlugin) Stats(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) []string {
-	return []string{}
 }
 
 // Name returns the name of the plugin.

@@ -25,16 +25,19 @@ var (
 	shorthandRollRegex = regexp.MustCompile(`\d*d\d+`)
 )
 
+// DicePlugin is the save structure for the plugin
 type DicePlugin struct {
 	bot *mmmorty.Bot
 }
 
-func (p *DicePlugin) Help(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, detailed bool) []string {
+// Help gets the usage for this plugin
+func (p *DicePlugin) Help(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, detailed bool) []string {
 	return mmmorty.CommandHelp(service, rollCommand, "X sided die OR roll XdY",
 		"asks Morty to roll dice for you")
 }
 
-func (p *DicePlugin) Load(bot *mmmorty.Bot, service mmmorty.Service, data []byte) error {
+// Load loads the plugin from the given data
+func (p *DicePlugin) Load(bot *mmmorty.Bot, service mmmorty.Discord, data []byte) error {
 	if data != nil {
 		if err := json.Unmarshal(data, p); err != nil {
 			log.Println("Error loading data", err)
@@ -45,12 +48,9 @@ func (p *DicePlugin) Load(bot *mmmorty.Bot, service mmmorty.Service, data []byte
 	return nil
 }
 
-func (p *DicePlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+// Message is the command handler for this plugin
+func (p *DicePlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	defer bot.MessageRecover(service, message.Channel())
-
-	if service.Name() != mmmorty.DiscordServiceName {
-		return
-	}
 
 	if service.IsMe(message) {
 		return
@@ -61,7 +61,7 @@ func (p *DicePlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message 
 	}
 }
 
-func (p *DicePlugin) handleRollCommand(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+func (p *DicePlugin) handleRollCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	_, parts := mmmorty.ParseCommand(service, message)
@@ -87,7 +87,7 @@ func (p *DicePlugin) handleRollCommand(bot *mmmorty.Bot, service mmmorty.Service
 	service.SendMessage(message.Channel(), reply)
 }
 
-func (p *DicePlugin) handleSimpleRollCommand(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, parts []string) {
+func (p *DicePlugin) handleSimpleRollCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, parts []string) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	sides, err := strconv.Atoi(parts[0])
@@ -103,7 +103,7 @@ func (p *DicePlugin) handleSimpleRollCommand(bot *mmmorty.Bot, service mmmorty.S
 	service.SendMessage(message.Channel(), reply)
 }
 
-func (p *DicePlugin) handleShorthandRollCommand(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, parts []string) {
+func (p *DicePlugin) handleShorthandRollCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, parts []string) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	shorthand := strings.Split(parts[0], "d")
@@ -142,18 +142,17 @@ func (p *DicePlugin) handleShorthandRollCommand(bot *mmmorty.Bot, service mmmort
 	service.SendMessage(message.Channel(), reply)
 }
 
+// Save saves the plugin's state to file
 func (p *DicePlugin) Save() ([]byte, error) {
 	return json.Marshal(p)
 }
 
-func (p *DicePlugin) Stats(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) []string {
-	return []string{}
-}
-
+// Name gets the name of the service for saving purposes
 func (p *DicePlugin) Name() string {
 	return "Dice"
 }
 
+// New creates a new instance of this plugin
 func New() mmmorty.Plugin {
 	return &DicePlugin{}
 }

@@ -19,7 +19,7 @@ func (p *helpPlugin) Name() string {
 }
 
 // Help returns a list of help strings that are printed when the user requests them.
-func (p *helpPlugin) Help(bot *Bot, service Service, message Message, detailed bool) []string {
+func (p *helpPlugin) Help(bot *Bot, service Discord, message DiscordMessage, detailed bool) []string {
 	privs := service.SupportsPrivateMessages() && !service.IsPrivate(message) && service.IsModerator(message)
 	if detailed && !privs {
 		return nil
@@ -53,7 +53,7 @@ func (p *helpPlugin) Help(bot *Bot, service Service, message Message, detailed b
 	return help
 }
 
-func (p *helpPlugin) Message(bot *Bot, service Service, message Message) {
+func (p *helpPlugin) Message(bot *Bot, service Discord, message DiscordMessage) {
 	if !service.IsMe(message) {
 		if MatchesCommand(service, "help", message) || MatchesCommand(service, "command", message) {
 
@@ -89,7 +89,7 @@ func (p *helpPlugin) Message(bot *Bot, service Service, message Message) {
 }
 
 // Load will load plugin state from a byte array.
-func (p *helpPlugin) Load(bot *Bot, service Service, data []byte) error {
+func (p *helpPlugin) Load(bot *Bot, service Discord, data []byte) error {
 	if data != nil {
 		if err := json.Unmarshal(data, p); err != nil {
 			log.Println("Error loading data", err)
@@ -103,12 +103,7 @@ func (p *helpPlugin) Save() ([]byte, error) {
 	return json.Marshal(p)
 }
 
-// Stats will return the stats for a plugin.
-func (p *helpPlugin) Stats(bot *Bot, service Service, message Message) []string {
-	return nil
-}
-
-// NeHelpPlugin will create a new help plugin.
+// NewHelpPlugin will create a new help plugin.
 func NewHelpPlugin() Plugin {
 	p := &helpPlugin{}
 	return p

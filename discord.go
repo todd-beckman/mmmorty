@@ -92,7 +92,7 @@ func (m DiscordMessage) Type() MessageType {
 // Discord is a Service provider for Discord.
 type Discord struct {
 	args        []interface{}
-	messageChan chan Message
+	messageChan chan *DiscordMessage
 
 	Shards int
 
@@ -107,7 +107,7 @@ type Discord struct {
 func NewDiscord(args ...interface{}) *Discord {
 	return &Discord{
 		args:        args,
-		messageChan: make(chan Message, 200),
+		messageChan: make(chan *DiscordMessage, 200),
 	}
 }
 
@@ -188,7 +188,7 @@ func (d *Discord) Name() string {
 }
 
 // Open opens the service and returns a channel which all messages will be sent on.
-func (d *Discord) Open() (<-chan Message, error) {
+func (d *Discord) Open() (<-chan *DiscordMessage, error) {
 	shards := d.Shards
 	if shards < 1 {
 		shards = 1
@@ -221,7 +221,7 @@ func (d *Discord) Open() (<-chan Message, error) {
 }
 
 // IsMe returns whether or not a message was sent by the bot.
-func (d *Discord) IsMe(message Message) bool {
+func (d *Discord) IsMe(message DiscordMessage) bool {
 	if d.Session.State.User == nil {
 		return false
 	}
@@ -353,18 +353,18 @@ func (d *Discord) CommandPrefix() string {
 }
 
 // IsBotOwner returns whether or not a message sender was the owner of the bot.
-func (d *Discord) IsBotOwner(message Message) bool {
+func (d *Discord) IsBotOwner(message DiscordMessage) bool {
 	return message.UserID() == d.OwnerUserID
 }
 
 // IsPrivate returns whether or not a message was private.
-func (d *Discord) IsPrivate(message Message) bool {
+func (d *Discord) IsPrivate(message DiscordMessage) bool {
 	c, err := d.Channel(message.Channel())
 	return err == nil && c.Type == 1
 }
 
 // IsChannelOwner returns whether or not the sender of a message is a moderator.
-func (d *Discord) IsChannelOwner(message Message) bool {
+func (d *Discord) IsChannelOwner(message DiscordMessage) bool {
 	c, err := d.Channel(message.Channel())
 	if err != nil {
 		return false
@@ -377,7 +377,7 @@ func (d *Discord) IsChannelOwner(message Message) bool {
 }
 
 // IsModerator returns whether or not the sender of a message is a moderator.
-func (d *Discord) IsModerator(message Message) bool {
+func (d *Discord) IsModerator(message DiscordMessage) bool {
 	p, err := d.UserChannelPermissions(message.UserID(), message.Channel())
 	if err == nil {
 		if p&discordgo.PermissionAdministrator == discordgo.PermissionAdministrator || p&discordgo.PermissionManageChannels == discordgo.PermissionManageChannels || p&discordgo.PermissionManageServer == discordgo.PermissionManageServer {
@@ -388,6 +388,7 @@ func (d *Discord) IsModerator(message Message) bool {
 	return d.IsChannelOwner(message)
 }
 
+// GetRoleByName returns the Discord role for the given role name
 func (d *Discord) GetRoleByName(channel, roleName string) *discordgo.Role {
 	roles := d.GetRoles(channel)
 	for _, r := range roles {
@@ -399,6 +400,7 @@ func (d *Discord) GetRoleByName(channel, roleName string) *discordgo.Role {
 	return nil
 }
 
+// GetRoles gets the list of roles for the given guild
 func (d *Discord) GetRoles(channel string) []*discordgo.Role {
 	c, err := d.Channel(channel)
 	if err != nil {
@@ -413,6 +415,7 @@ func (d *Discord) GetRoles(channel string) []*discordgo.Role {
 	return g.Roles
 }
 
+// GuildMemberRoleAdd gives a guild member a role
 func (d *Discord) GuildMemberRoleAdd(channel, user, role string) bool {
 	err := d.Session.GuildMemberRoleAdd(channel, user, role)
 	if err != nil {
@@ -422,6 +425,7 @@ func (d *Discord) GuildMemberRoleAdd(channel, user, role string) bool {
 	return true
 }
 
+// GuildMemberRoleRemove takes a guild member's role
 func (d *Discord) GuildMemberRoleRemove(channel, user, role string) bool {
 	err := d.Session.GuildMemberRoleRemove(channel, user, role)
 	if err != nil {
@@ -442,13 +446,13 @@ func (d *Discord) SupportsMessageHistory() bool {
 }
 
 // MessageHistory returns the message history for a channel.
-func (d *Discord) MessageHistory(channel string) []Message {
+func (d *Discord) MessageHistory(channel string) []*DiscordMessage {
 	c, err := d.Channel(channel)
 	if err != nil {
 		return nil
 	}
 
-	messages := make([]Message, len(c.Messages))
+	messages := make([]*DiscordMessage, len(c.Messages))
 	for i := 0; i < len(c.Messages); i++ {
 		messages[i] = &DiscordMessage{
 			Discord:          d,
@@ -460,6 +464,7 @@ func (d *Discord) MessageHistory(channel string) []Message {
 	return messages
 }
 
+// Channel gets the Discord Channel for the given ID
 func (d *Discord) Channel(channelID string) (channel *discordgo.Channel, err error) {
 	for _, s := range d.Sessions {
 		channel, err = s.State.Channel(channelID)
@@ -470,6 +475,7 @@ func (d *Discord) Channel(channelID string) (channel *discordgo.Channel, err err
 	return
 }
 
+// Guild gets the Discord Guild for the given ID
 func (d *Discord) Guild(guildID string) (guild *discordgo.Guild, err error) {
 	for _, s := range d.Sessions {
 		guild, err = s.State.Guild(guildID)
@@ -480,6 +486,7 @@ func (d *Discord) Guild(guildID string) (guild *discordgo.Guild, err error) {
 	return
 }
 
+// Guilds gets the list of Discord Guilds the service has sessions for
 func (d *Discord) Guilds() []*discordgo.Guild {
 	guilds := []*discordgo.Guild{}
 	for _, s := range d.Sessions {
@@ -488,6 +495,7 @@ func (d *Discord) Guilds() []*discordgo.Guild {
 	return guilds
 }
 
+// UserChannelPermissions gets the bits for the user's permissions
 func (d *Discord) UserChannelPermissions(userID, channelID string) (apermissions int, err error) {
 	for _, s := range d.Sessions {
 		apermissions, err = s.State.UserChannelPermissions(userID, channelID)
@@ -498,6 +506,7 @@ func (d *Discord) UserChannelPermissions(userID, channelID string) (apermissions
 	return
 }
 
+// UserColor gets the color of the given user
 func (d *Discord) UserColor(userID, channelID string) int {
 	for _, s := range d.Sessions {
 		color := s.State.UserColor(userID, channelID)
@@ -508,8 +517,9 @@ func (d *Discord) UserColor(userID, channelID string) int {
 	return 0
 }
 
-func (d *Discord) UserRoles(channel, memberId string) []string {
-	member, err := d.Session.GuildMember(channel, memberId)
+// UserRoles gets the list of roles of the given user
+func (d *Discord) UserRoles(channel, memberID string) []string {
+	member, err := d.Session.GuildMember(channel, memberID)
 	if err != nil {
 		log.Println(fmt.Sprintf("%v", err))
 		return []string{}
@@ -517,10 +527,12 @@ func (d *Discord) UserRoles(channel, memberId string) []string {
 	return member.Roles
 }
 
-func (d *Discord) Nickname(message Message) string {
+// Nickname gets the nickname of the speaker of a message
+func (d *Discord) Nickname(message DiscordMessage) string {
 	return d.NicknameForID(message.UserID(), message.UserName(), message.Channel())
 }
 
+// NicknameForID gets the nickname of the given user
 func (d *Discord) NicknameForID(userID, userName, channelID string) string {
 	c, err := d.Channel(channelID)
 	if err == nil {

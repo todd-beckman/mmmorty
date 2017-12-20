@@ -1,15 +1,9 @@
 package mmmorty
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
-	"mime/multipart"
-	"net/http"
 	"os"
 	"runtime/debug"
 )
@@ -18,9 +12,9 @@ import (
 const VersionString string = "0.11"
 
 type serviceEntry struct {
-	Service
+	Discord
 	Plugins         map[string]Plugin
-	messageChannels []chan Message
+	messageChannels []chan DiscordMessage
 }
 
 // Bot enables registering of Services and Plugins.
@@ -32,7 +26,7 @@ type Bot struct {
 }
 
 // MessageRecover is the default panic handler
-func (b *Bot) MessageRecover(service Service, channel string) {
+func (b *Bot) MessageRecover(discord Discord, channel string) {
 	if r := recover(); r != nil {
 		panic := fmt.Sprintf("%s", r)
 		// log first
@@ -40,9 +34,8 @@ func (b *Bot) MessageRecover(service Service, channel string) {
 		log.Println("Recovered:", string(debug.Stack()))
 
 		// notify owner
-		discord := service.(*Discord)
 		owner := fmt.Sprintf("<@%s>", discord.OwnerUserID)
-		service.SendMessage(channel, fmt.Sprintf("%s: Something went wrong. Summary: %s", owner, panic))
+		discord.SendMessage(channel, fmt.Sprintf("%s: Something went wrong. Summary: %s", owner, panic))
 	}
 }
 
@@ -53,7 +46,7 @@ func NewBot() *Bot {
 	}
 }
 
-func (b *Bot) getData(service Service, plugin Plugin) []byte {
+func (b *Bot) getData(service Discord, plugin Plugin) []byte {
 	if b, err := ioutil.ReadFile(service.Name() + "/" + plugin.Name()); err == nil {
 		return b
 	}
@@ -61,20 +54,20 @@ func (b *Bot) getData(service Service, plugin Plugin) []byte {
 }
 
 // RegisterService registers a service with the bot.
-func (b *Bot) RegisterService(service Service) {
+func (b *Bot) RegisterService(service Discord) {
 	if b.Services[service.Name()] != nil {
 		log.Println("Service with that name already registered", service.Name())
 	}
 	serviceName := service.Name()
 	b.Services[serviceName] = &serviceEntry{
-		Service: service,
+		Discord: service,
 		Plugins: make(map[string]Plugin, 0),
 	}
 	b.RegisterPlugin(service, NewHelpPlugin())
 }
 
 // RegisterPlugin registers a plugin on a service.
-func (b *Bot) RegisterPlugin(service Service, plugin Plugin) {
+func (b *Bot) RegisterPlugin(service Discord, plugin Plugin) {
 	s := b.Services[service.Name()]
 	if s.Plugins[plugin.Name()] != nil {
 		log.Println("Plugin with that name already registered", plugin.Name())
@@ -82,14 +75,15 @@ func (b *Bot) RegisterPlugin(service Service, plugin Plugin) {
 	s.Plugins[plugin.Name()] = plugin
 }
 
-func (b *Bot) listen(service Service, messageChan <-chan Message) {
+func (b *Bot) listen(service Discord, messageChan <-chan *DiscordMessage) {
 	serviceName := service.Name()
+
 	for {
 		message := <-messageChan
 		//log.Printf("<%s> %s: %s\n", message.Channel(), message.UserName(), message.Message())
 		plugins := b.Services[serviceName].Plugins
 		for _, plugin := range plugins {
-			go plugin.Message(b, service, message)
+			go plugin.Message(b, service, *message)
 		}
 	}
 }
@@ -99,9 +93,9 @@ func (b *Bot) Open() {
 	for _, service := range b.Services {
 		if messageChan, err := service.Open(); err == nil {
 			for _, plugin := range service.Plugins {
-				plugin.Load(b, service.Service, b.getData(service, plugin))
+				plugin.Load(b, service.Discord, b.getData(service.Discord, plugin))
 			}
-			go b.listen(service.Service, messageChan)
+			go b.listen(service.Discord, messageChan)
 		} else {
 			log.Printf("Error creating service %s: %v\n", service.Name(), err)
 		}
@@ -127,61 +121,4 @@ func (b *Bot) Save() {
 			}
 		}
 	}
-}
-
-// UploadToImgur uploads image data to Imgur and returns the url to it.
-func (b *Bot) UploadToImgur(re io.Reader, filename string) (string, error) {
-	if b.ImgurID == "" {
-		return "", errors.New("No Imgur client ID provided.")
-	}
-
-	bodyBuf := &bytes.Buffer{}
-	bodywriter := multipart.NewWriter(bodyBuf)
-
-	writer, err := bodywriter.CreateFormFile("image", filename)
-	if err != nil {
-		return "", err
-	}
-
-	_, err = io.Copy(writer, re)
-	if err != nil {
-		return "", err
-	}
-
-	contentType := bodywriter.FormDataContentType()
-	if b.ImgurAlbum != "" {
-		bodywriter.WriteField("album", b.ImgurAlbum)
-	}
-	bodywriter.Close()
-
-	r, err := http.NewRequest("POST", "https://api.imgur.com/3/image", bodyBuf)
-	if err != nil {
-		return "", err
-	}
-
-	r.Header.Set("Content-Type", contentType)
-	r.Header.Set("Authorization", "Client-ID "+b.ImgurID)
-
-	resp, err := http.DefaultClient.Do(r)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	if resp.StatusCode != 200 {
-		return "", errors.New(string(body))
-	}
-
-	j := make(map[string]interface{})
-
-	err = json.Unmarshal(body, &j)
-	if err != nil {
-		return "", err
-	}
-
-	return j["data"].(map[string]interface{})["link"].(string), nil
 }

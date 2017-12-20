@@ -34,8 +34,11 @@ var (
 )
 
 const (
-	OWNER_ENV = "DISCORD_OWNER"
-	TOKEN_ENV = "DISCORD_TOKEN"
+	// OwnerEnv is the key to the environment variable containing the User ID of this bot's owner
+	OwnerEnv = "DISCORD_OWNER"
+
+	// TokenEnv is the key to the environment variable containing the public token of this bot
+	TokenEnv = "DISCORD_TOKEN"
 )
 
 func init() {
@@ -54,10 +57,10 @@ func init() {
 	flag.Parse()
 
 	if discordToken == "" {
-		discordToken = os.Getenv(TOKEN_ENV)
+		discordToken = os.Getenv(TokenEnv)
 	}
 	if discordOwnerUserID == "" {
-		discordOwnerUserID = os.Getenv(OWNER_ENV)
+		discordOwnerUserID = os.Getenv(OwnerEnv)
 	}
 
 	rand.Seed(time.Now().UnixNano())
@@ -72,7 +75,7 @@ func main() {
 	// Generally CommandPlugins don't hold state, so we share one instance of the command plugin for all services.
 	cp := mmmorty.NewCommandPlugin()
 
-	cp.AddCommand("quit", func(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, args string, parts []string) {
+	cp.AddCommand("quit", func(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, args string, parts []string) {
 		if service.IsBotOwner(message) {
 			q <- true
 		}
@@ -80,12 +83,13 @@ func main() {
 
 	// Register the Discord service if we have an email or token.
 	if (discordEmail != "" && discordPassword != "") || discordToken != "" {
-		var discord *mmmorty.Discord
+		var discordPointer *mmmorty.Discord
 		if discordToken != "" {
-			discord = mmmorty.NewDiscord(fmt.Sprintf("Bot %s", discordToken))
+			discordPointer = mmmorty.NewDiscord(fmt.Sprintf("Bot %s", discordToken))
 		} else {
-			discord = mmmorty.NewDiscord(discordEmail, discordPassword)
+			discordPointer = mmmorty.NewDiscord(discordEmail, discordPassword)
 		}
+		discord := *discordPointer
 		discord.ApplicationClientID = discordApplicationClientID
 		discord.OwnerUserID = discordOwnerUserID
 		discord.Shards = discordShards

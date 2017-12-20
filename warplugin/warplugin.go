@@ -20,13 +20,14 @@ const (
 	maxWarCount     = 10
 )
 
+// War is a timed sprint with users subscribed to the start and end alerts
 type War struct {
 	// public
-	Channel   string   `json: "channel"`  // which channel the sprint was started from
-	Duration  int      `json: "duration"` // minutes
-	Name      string   `json: "name"`
-	Sprinters []string `json: "sprinters"` // list of user ID's of players to ping for updates
-	Start     int64    `json: "start"`     // Unix time, the number of seconds elapsed since January 1, 1970 UTC.
+	Channel   string   `json:"channel"`  // which channel the sprint was started from
+	Duration  int      `json:"duration"` // minutes
+	Name      string   `json:"name"`
+	Sprinters []string `json:"sprinters"` // list of user ID's of players to ping for updates
+	Start     int64    `json:"start"`     // Unix time, the number of seconds elapsed since January 1, 1970 UTC.
 
 	// private
 	alertTimer *time.Timer
@@ -34,9 +35,10 @@ type War struct {
 	endTimer   *time.Timer
 }
 
+// WarPlugin is this plugin's save structure
 type WarPlugin struct {
 	bot  *mmmorty.Bot
-	Wars map[string]*War `json: "wars"` // map of name to war
+	Wars map[string]*War `json:"wars"` // map of name to war
 }
 
 func timeWithoutSeconds() time.Time {
@@ -67,7 +69,7 @@ func (p *WarPlugin) pickName() string {
 	return name
 }
 
-func (p *WarPlugin) alertNotify(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, name string) {
+func (p *WarPlugin) alertNotify(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, name string) {
 	war, ok := p.Wars[name]
 	if !ok {
 		return
@@ -85,7 +87,7 @@ func (p *WarPlugin) alertNotify(bot *mmmorty.Bot, service mmmorty.Service, messa
 	service.SendMessage(war.Channel, reply)
 }
 
-func (p *WarPlugin) startNotify(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, name string) {
+func (p *WarPlugin) startNotify(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, name string) {
 	war, ok := p.Wars[name]
 	if !ok {
 		return
@@ -102,7 +104,7 @@ func (p *WarPlugin) startNotify(bot *mmmorty.Bot, service mmmorty.Service, messa
 	service.SendMessage(war.Channel, reply)
 }
 
-func (p *WarPlugin) endNotify(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, name string) {
+func (p *WarPlugin) endNotify(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, name string) {
 	war, ok := p.Wars[name]
 	if !ok {
 		return
@@ -115,7 +117,8 @@ func (p *WarPlugin) endNotify(bot *mmmorty.Bot, service mmmorty.Service, message
 	delete(p.Wars, name)
 }
 
-func (p *WarPlugin) Help(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, detailed bool) []string {
+// Help gets the usage info for this plugin
+func (p *WarPlugin) Help(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, detailed bool) []string {
 	help := mmmorty.CommandHelp(service, startWarCommand,
 		"at :XX for Y (mins)", "starts a sprint starting when the minute hand points to XX and lasting for Y minutes")
 	help = append(help, mmmorty.CommandHelp(service, endWarCommand, "ID",
@@ -127,7 +130,8 @@ func (p *WarPlugin) Help(bot *mmmorty.Bot, service mmmorty.Service, message mmmo
 	return help
 }
 
-func (p *WarPlugin) Load(bot *mmmorty.Bot, service mmmorty.Service, data []byte) error {
+// Load loads the plugin with the given data
+func (p *WarPlugin) Load(bot *mmmorty.Bot, service mmmorty.Discord, data []byte) error {
 	if data != nil {
 		if err := json.Unmarshal(data, p); err != nil {
 			log.Println("Error loading data", err)
@@ -138,7 +142,8 @@ func (p *WarPlugin) Load(bot *mmmorty.Bot, service mmmorty.Service, data []byte)
 	return nil
 }
 
-func (p *WarPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+// Message is the command handler for this plugin
+func (p *WarPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	defer bot.MessageRecover(service, message.Channel())
 
 	if service.Name() != mmmorty.DiscordServiceName {
@@ -160,7 +165,7 @@ func (p *WarPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message m
 	}
 }
 
-func (p *WarPlugin) handleStartWarCommand(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+func (p *WarPlugin) handleStartWarCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	if service.IsPrivate(message) {
@@ -283,7 +288,7 @@ func (p *WarPlugin) handleStartWarCommand(bot *mmmorty.Bot, service mmmorty.Serv
 	service.SendMessage(message.Channel(), reply)
 }
 
-func (p *WarPlugin) handleJoinWarCommand(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+func (p *WarPlugin) handleJoinWarCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	_, parts := mmmorty.ParseCommand(service, message)
@@ -322,7 +327,7 @@ func (p *WarPlugin) handleJoinWarCommand(bot *mmmorty.Bot, service mmmorty.Servi
 	service.SendMessage(message.Channel(), reply)
 }
 
-func (p *WarPlugin) handleLeaveWarCommand(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+func (p *WarPlugin) handleLeaveWarCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	_, parts := mmmorty.ParseCommand(service, message)
@@ -367,7 +372,7 @@ func (p *WarPlugin) handleLeaveWarCommand(bot *mmmorty.Bot, service mmmorty.Serv
 	service.SendMessage(message.Channel(), reply)
 }
 
-func (p *WarPlugin) handleEndWarCommand(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+func (p *WarPlugin) handleEndWarCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	_, parts := mmmorty.ParseCommand(service, message)
@@ -395,18 +400,17 @@ func (p *WarPlugin) handleEndWarCommand(bot *mmmorty.Bot, service mmmorty.Servic
 	service.SendMessage(message.Channel(), reply)
 }
 
+// Save saves the state of the plugin to file
 func (p *WarPlugin) Save() ([]byte, error) {
 	return json.Marshal(p)
 }
 
-func (p *WarPlugin) Stats(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) []string {
-	return []string{}
-}
-
+// Name gets the name of this plugin for saving purposes
 func (p *WarPlugin) Name() string {
 	return "War"
 }
 
+// New creates a new instance of this plugin
 func New() mmmorty.Plugin {
 	return &WarPlugin{
 		Wars: map[string]*War{},

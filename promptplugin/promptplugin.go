@@ -21,22 +21,26 @@ const (
 	maxWordCount   = 150
 )
 
+// Prompt is a prompt
 type Prompt struct {
-	Prompt string `json: "prompt"`
+	Prompt string `json:"prompt"`
 }
 
+// PromptPlugin is the save structure of this plugin
 type PromptPlugin struct {
 	bot     *mmmorty.Bot
-	Prompts []Prompt `json: "prompts"`
+	Prompts []Prompt `json:"prompts"`
 }
 
-func (p *PromptPlugin) Help(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message, detailed bool) []string {
+// Help gets the usage for this plugin
+func (p *PromptPlugin) Help(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, detailed bool) []string {
 	help := mmmorty.CommandHelp(service, addPromptCommand, "some prompt", "adds a prompt for Morty to remember")
 	help = append(help, mmmorty.CommandHelp(service, promptCommand, "", "asks Morty for a prompt at random.")[0])
 	return help
 }
 
-func (p *PromptPlugin) Load(bot *mmmorty.Bot, service mmmorty.Service, data []byte) error {
+// Load sets the state of the plugin from the given data
+func (p *PromptPlugin) Load(bot *mmmorty.Bot, service mmmorty.Discord, data []byte) error {
 	if data != nil {
 		if err := json.Unmarshal(data, p); err != nil {
 			log.Println("Error loading data", err)
@@ -47,12 +51,9 @@ func (p *PromptPlugin) Load(bot *mmmorty.Bot, service mmmorty.Service, data []by
 	return nil
 }
 
-func (p *PromptPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+// Message is the command handler for this plugin
+func (p *PromptPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	defer bot.MessageRecover(service, message.Channel())
-
-	if service.Name() != mmmorty.DiscordServiceName {
-		return
-	}
 
 	if service.IsMe(message) {
 		return
@@ -65,7 +66,7 @@ func (p *PromptPlugin) Message(bot *mmmorty.Bot, service mmmorty.Service, messag
 	}
 }
 
-func (p *PromptPlugin) handleAddPromptCommand(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+func (p *PromptPlugin) handleAddPromptCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	if len(p.Prompts) >= maxPromptCount {
@@ -88,9 +89,8 @@ func (p *PromptPlugin) handleAddPromptCommand(bot *mmmorty.Bot, service mmmorty.
 			reply := fmt.Sprintf("Uh, %s, that prompt is kind of long. Is there any way you can shorten it?", requester)
 			service.SendMessage(message.Channel(), reply)
 			return
-		} else {
-			promptParts = append(promptParts, word)
 		}
+		promptParts = append(promptParts, word)
 	}
 
 	if len(promptParts) == 0 {
@@ -111,7 +111,7 @@ func (p *PromptPlugin) handleAddPromptCommand(bot *mmmorty.Bot, service mmmorty.
 	service.SendMessage(message.Channel(), reply)
 }
 
-func (p *PromptPlugin) handlePromptCommand(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) {
+func (p *PromptPlugin) handlePromptCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	promptCount := len(p.Prompts)
@@ -127,18 +127,17 @@ func (p *PromptPlugin) handlePromptCommand(bot *mmmorty.Bot, service mmmorty.Ser
 	service.SendMessage(message.Channel(), reply)
 }
 
+// Save saves this plugin
 func (p *PromptPlugin) Save() ([]byte, error) {
 	return json.Marshal(p)
 }
 
-func (p *PromptPlugin) Stats(bot *mmmorty.Bot, service mmmorty.Service, message mmmorty.Message) []string {
-	return []string{}
-}
-
+// Name gets the name of the plugin for saving purposes
 func (p *PromptPlugin) Name() string {
 	return "Prompt"
 }
 
+// New creates a new instance of this plugin.
 func New() mmmorty.Plugin {
 	return &PromptPlugin{}
 }
