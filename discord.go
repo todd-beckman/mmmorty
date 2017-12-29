@@ -416,8 +416,8 @@ func (d *Discord) GetRoles(channel string) []*discordgo.Role {
 }
 
 // GuildMemberRoleAdd gives a guild member a role
-func (d *Discord) GuildMemberRoleAdd(channel, user, role string) bool {
-	err := d.Session.GuildMemberRoleAdd(channel, user, role)
+func (d *Discord) GuildMemberRoleAdd(guild, user, role string) bool {
+	err := d.Session.GuildMemberRoleAdd(guild, user, role)
 	if err != nil {
 		log.Println(fmt.Sprintf("%v", err))
 		return false
@@ -426,8 +426,8 @@ func (d *Discord) GuildMemberRoleAdd(channel, user, role string) bool {
 }
 
 // GuildMemberRoleRemove takes a guild member's role
-func (d *Discord) GuildMemberRoleRemove(channel, user, role string) bool {
-	err := d.Session.GuildMemberRoleRemove(channel, user, role)
+func (d *Discord) GuildMemberRoleRemove(guild, user, role string) bool {
+	err := d.Session.GuildMemberRoleRemove(guild, user, role)
 	if err != nil {
 		log.Println(fmt.Sprintf("%v", err))
 		return false
@@ -518,10 +518,10 @@ func (d *Discord) UserColor(userID, channelID string) int {
 }
 
 // UserRoles gets the list of roles of the given user
-func (d *Discord) UserRoles(channel, memberID string) []string {
-	member, err := d.Session.GuildMember(channel, memberID)
+func (d *Discord) UserRoles(guild, memberID string) []string {
+	member, err := d.Session.GuildMember(guild, memberID)
 	if err != nil {
-		log.Println(fmt.Sprintf("%v", err))
+		log.Println(fmt.Sprintf("Error getting user roles: %v", err))
 		return []string{}
 	}
 	return member.Roles
