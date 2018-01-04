@@ -81,12 +81,6 @@ func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message
 
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
-	if service.IsPrivate(message) {
-		reply := fmt.Sprintf("Uh, %s, I cannot color you in private.", requester)
-		service.SendMessage(message.Channel(), reply)
-		return
-	}
-
 	if service.IsMe(message) {
 		return
 	}
@@ -123,6 +117,12 @@ func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message
 
 func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
+
+	if service.IsPrivate(message) {
+		reply := fmt.Sprintf("Uh, %s, I cannot color you in private.", requester)
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
 
 	if availableRoles := p.getPrintableRoles(guildID); len(availableRoles) == 0 {
 		reply := fmt.Sprintf("Uh, %s, I don't think this server lets me set your color.", requester)
@@ -193,6 +193,12 @@ func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Discord, m
 
 func (p *ColorPlugin) handleManageColor(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
+
+	if service.IsPrivate(message) {
+		reply := fmt.Sprintf("Uh, %s, I cannot color you in private.", requester)
+		service.SendMessage(message.Channel(), reply)
+		return
+	}
 
 	if message.UserID() != service.OwnerUserID {
 		reply := fmt.Sprintf("Uh, %s, I think you need to ask my Rick for that command.", requester)
