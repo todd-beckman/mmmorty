@@ -1,6 +1,6 @@
 # MMMorty!
 
-Discord bot in development.
+Discord bot by me (aka Giant)
 
 Much of this code was taken from:
 https://github.com/iopred/bruxism/blob/master/discord.go
@@ -9,7 +9,8 @@ Check that one out. It's a really good example.
 
 ## Features
 
-Mmmorty is still alpha and so its featureset is fairly limited for now.
+Mmmorty is rather Beta in the sense that it mainly has the features I felt like implementing
+rather than any requested features.
 
 #### TLDR
 
@@ -63,35 +64,43 @@ If you want to opt out of this feature, start the bot with the `-color=FALSE` co
 
 #### Timed Sprints
 
-Use `@<botname> start sprint at :XX for Y` to start a timed "sprint"/"word war". This feature is targetted more towards the WriMo community, for which timed writing sessions help motivate writing groups to be productive for a set amount of time, and then subsequently report their results. Various alerts will be sent and users can request to be pinged on these updates, so this kind of timer can certainly be used in other contexts merely by changing the output strings. How it works:
+This is the original reason I made this bot.
 
-1. Start a sprint. The `:XX` notation provides a timezone-agnostic time to start. `Y` is the number of minutes the sprint should last.
-2. Users can use the `join sprint` and `leave sprint` commands to add/remove themselves from the list of users that get pinged at each interval. The user that starts the sprint is added automatically.
+Use `@<botname> start sprint at :XX for Y` to start a timed "sprint"/"word war".
+
+This feature is targetted more towards the WriMo community but might be useful for anyone
+looking for short bursts of productivity. Users can request to be pinged on these updates.
+ 
+It should be easy to change the output strings in a fork branch to make use of the timer for other purposes.
+
+How it works:
+
+1. Start a sprint. The `:XX` notation provides a timezone-agnostic time to start.
+  `Y` is the number of minutes the sprint should last. The `:` is optional and `at X` and `for Y` are interchangeable.
+2. Users can use the `join sprint` and `leave sprint` commands to add/remove themselves from
+  the list of users that get pinged at each interval.
+  The user that starts the sprint is added automatically.
 3. Users receive three updates: the one-minute-before warning, the start notification, and the end notification.
 
-Multiple simultaneous sprints can be run. Each one is given an ID number to help manage them. This feature is disabled by default, so you will need the `-war=TRUE` flag to enable it.
+Multiple simultaneous sprints can be run. Each one is given an ID number to help manage them.
+This feature is disabled by default, so you will need the `-war=TRUE` flag to enable it.
 
 ## Setting Up
 
-1. Set up a bot with discord. A good guide for this is [here](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token)
+1. Set up a bot with discord. A good guide for this is [here](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token).
 
-1. Connect with permissions (see: https://discordapi.com/permissions.html). When you install be sure to request permissions for at least:
+2. Connect with permissions (see: https://discordapi.com/permissions.html). Use these permission:
 
-    - Manage Roles
+    - Manage Roles (if you want the color-changing feature)
     - Read Messages
     - Send Messages
 
     This means you should connect to `https://discordapp.com/oauth2/authorize?client_id=<client id>&scope=bot&permissions=26843852868438528`
 
-1. Run this bot. Use `make` to install mmmorty globally, and then run:
+3. Run this bot. Use `make` to install mmmorty globally, and then run:
 
     `mmmorty -discordtoken <token> -discordowneruserid <your user id>`
     
-  Alternatively you can set environment variables for `DISCORD_TOKEN` and `DISCORD_OWNER` so you only need to call `mmmorty` to run the program.
-
-## Troubleshooting
-
-- Mmmorty currently works in one channel (default channel) only. It will claim that it does not have permission to access roles in that channel. For now, only access it from the default channel until I fix this.
-
-- Mmmorty's state persists across servers, so if it is installed on two servers, the managed color list will be retained on both. This should not cause any issues except for minor confusion on the `manage color` and `stop managing` commands.
+  Alternatively you can set environment variables for `DISCORD_TOKEN` and `DISCORD_OWNER`
+  so you only need to call `mmmorty` to run the program.
 
