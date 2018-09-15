@@ -17,6 +17,7 @@ const (
 	endWarCommand   = "end sprint"
 	joinWarCommand  = "join sprint"
 	leaveWarCommand = "leave sprint"
+	doTheThing      = "do the thing"
 	maxWarCount     = 10
 )
 
@@ -41,92 +42,28 @@ type WarPlugin struct {
 	Wars map[string]*War `json:"wars"` // map of name to war
 }
 
-func timeWithoutSeconds() time.Time {
-	now := time.Now()
-	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0, now.Location())
-}
-
-func stringifySprinters(war *War) string {
-	notifyUsers := []string{}
-	for _, sprinter := range war.Sprinters {
-		notifyUsers = append(notifyUsers, fmt.Sprintf("<@%s>", sprinter))
-	}
-	return strings.Join(notifyUsers, " ")
-}
-
-func (p *WarPlugin) pickName() string {
-	name := fmt.Sprintf(
-		"%v%v%v",
-		rand.Intn(10),
-		rand.Intn(10),
-		rand.Intn(10),
-	)
-	_, ok := p.Wars[name]
-	if ok {
-		return p.pickName()
-	}
-
-	return name
-}
-
-func (p *WarPlugin) alertNotify(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, name string) {
-	war, ok := p.Wars[name]
-	if !ok {
-		return
-	}
-
-	notifyString := stringifySprinters(war)
-
-	duration := war.Duration
-	minuteString := "minutes"
-	if duration == 1 {
-		minuteString = "minute"
-	}
-
-	reply := fmt.Sprintf("Sprint %s is starting in one minute, when it will go for %v %s! %s", name, duration, minuteString, notifyString)
-	service.SendMessage(war.Channel, reply)
-}
-
-func (p *WarPlugin) startNotify(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, name string) {
-	war, ok := p.Wars[name]
-	if !ok {
-		return
-	}
-
-	notifyString := stringifySprinters(war)
-
-	duration := war.Duration
-	minuteString := "minutes"
-	if duration == 1 {
-		minuteString = "minute"
-	}
-	reply := fmt.Sprintf("Sprint %s starts now and goes for %v %s! %s", name, duration, minuteString, notifyString)
-	service.SendMessage(war.Channel, reply)
-}
-
-func (p *WarPlugin) endNotify(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, name string) {
-	war, ok := p.Wars[name]
-	if !ok {
-		return
-	}
-
-	notifyString := stringifySprinters(war)
-	reply := fmt.Sprintf("Sprint %s has ended! %s", name, notifyString)
-	service.SendMessage(war.Channel, reply)
-
-	delete(p.Wars, name)
-}
-
 // Help gets the usage info for this plugin
 func (p *WarPlugin) Help(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, detailed bool) []string {
-	help := mmmorty.CommandHelp(service, startWarCommand,
-		"at :XX for Y (mins)", "starts a sprint starting when the minute hand points to XX and lasting for Y minutes")
-	help = append(help, mmmorty.CommandHelp(service, endWarCommand, "ID",
-		"Ends the sprint with the given name.")[0])
-	help = append(help, mmmorty.CommandHelp(service, joinWarCommand, "ID",
-		"Adds you to the list of people to notify for the given sprint.")[0])
-	help = append(help, mmmorty.CommandHelp(service, leaveWarCommand, "ID",
-		"Removes you from the list of people to notify for the given sprint.")[0])
+	help := mmmorty.CommandHelp(
+		service, startWarCommand, "at :XX for Y (mins)",
+		"starts a sprint starting when the minute hand points to XX and lasting for Y minutes",
+	)
+	help = append(help, mmmorty.CommandHelp(
+		service, endWarCommand, "ID",
+		"Ends the sprint with the given name.",
+	)[0])
+	help = append(help, mmmorty.CommandHelp(
+		service, joinWarCommand, "ID",
+		"Adds you to the list of people to notify for the given sprint.",
+	)[0])
+	help = append(help, mmmorty.CommandHelp(
+		service, leaveWarCommand, "ID",
+		"Removes you from the list of people to notify for the given sprint.",
+	)[0])
+	help = append(help, mmmorty.CommandHelp(
+		service, doTheThing, "",
+		"Shorthand for \"start sprint for 15\" starting at the next time the minute hand ends in 0 or 5.",
+	)[0])
 	return help
 }
 
@@ -156,6 +93,8 @@ func (p *WarPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message m
 
 	if mmmorty.MatchesCommand(service, startWarCommand, message) {
 		p.handleStartWarCommand(bot, service, message)
+	} else if mmmorty.MatchesCommand(service, doTheThing, message) {
+		p.handleDoTheThing(bot, service, message)
 	} else if mmmorty.MatchesCommand(service, joinWarCommand, message) {
 		p.handleJoinWarCommand(bot, service, message)
 	} else if mmmorty.MatchesCommand(service, leaveWarCommand, message) {
@@ -163,6 +102,19 @@ func (p *WarPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message m
 	} else if mmmorty.MatchesCommand(service, endWarCommand, message) {
 		p.handleEndWarCommand(bot, service, message)
 	}
+}
+
+func (p *WarPlugin) handleDoTheThing(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
+	now := timeWithoutSeconds()
+	nowMinute := now.Minute()
+	// :00 + 5 - 0 = :05
+	// :01 + 5 - 1 = :05
+	// :02 + 5 - 2 = :05
+	// :03 + 5 - 3 = :05
+	// :04 + 5 - 4 = :05
+	startMinute := 5 - (nowMinute % 5)
+
+	p.startWar(bot, service, message, startMinute, 15)
 }
 
 func (p *WarPlugin) handleStartWarCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
@@ -223,69 +175,7 @@ func (p *WarPlugin) handleStartWarCommand(bot *mmmorty.Bot, service mmmorty.Disc
 		return
 	}
 
-	now := timeWithoutSeconds()
-	nowMinutes := now.Minute()
-
-	// Cannot start the timer for the current minute
-	if minutes == nowMinutes {
-		// TODO: print error
-		return
-	}
-
-	// Rollover to the next hour
-	if minutes < nowMinutes {
-		minutes += 60
-	}
-
-	// unique ID used to remember this war
-	name := p.pickName()
-
-	// when to give the minute-before alert
-	minutesToAlert := minutes - nowMinutes - 1
-	var alertTimer *time.Timer
-	if minutesToAlert > 0 {
-		alertingIn, _ := time.ParseDuration(fmt.Sprintf("%vm", minutesToAlert))
-		alertTimer = time.AfterFunc(alertingIn, func() {
-			p.alertNotify(bot, service, message, name)
-		})
-	}
-
-	// when to give the starting alert
-	minutesToStart := minutes - nowMinutes
-	startingIn, _ := time.ParseDuration(fmt.Sprintf("%vm", minutesToStart))
-	startTimer := time.AfterFunc(startingIn, func() {
-		p.startNotify(bot, service, message, name)
-	})
-
-	// when to give the ending alert
-	minutesToEnd := minutesToStart + duration
-	endingIn, _ := time.ParseDuration(fmt.Sprintf("%vm", minutesToEnd))
-	endTimer := time.AfterFunc(endingIn, func() {
-		p.endNotify(bot, service, message, name)
-	})
-
-	// backup the war info
-	war := &War{
-		Channel:   message.Channel(),
-		Duration:  duration,
-		Name:      name,
-		Sprinters: []string{message.UserID()},
-		Start:     now.Add(startingIn).Unix(),
-
-		alertTimer: alertTimer,
-		startTimer: startTimer,
-		endTimer:   endTimer,
-	}
-	p.Wars[name] = war
-
-	reply := fmt.Sprintf(
-		"Ok, %s, you got it! I added you to this sprint. Use `%s %s` to get updates, `%s %s` to stop getting them, and `%s %s` to cancel this sprint.",
-		requester,
-		joinWarCommand, name,
-		leaveWarCommand, name,
-		endWarCommand, name,
-	)
-	service.SendMessage(message.Channel(), reply)
+	p.startWar(bot, service, message, minutes, duration)
 }
 
 func (p *WarPlugin) handleJoinWarCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
@@ -415,4 +305,147 @@ func New() mmmorty.Plugin {
 	return &WarPlugin{
 		Wars: map[string]*War{},
 	}
+}
+
+func (p *WarPlugin) startWar(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, minutes, duration int) {
+	requester := fmt.Sprintf("<@%s>", message.UserID())
+
+	now := timeWithoutSeconds()
+	nowMinutes := now.Minute()
+
+	// Cannot start the timer for the current minute
+	if minutes == nowMinutes {
+		// TODO: print error
+		return
+	}
+
+	// Rollover to the next hour
+	if minutes < nowMinutes {
+		minutes += 60
+	}
+	// unique ID used to remember this war
+	name := p.pickName()
+
+	// when to give the minute-before alert
+	minutesToAlert := minutes - nowMinutes - 1
+	var alertTimer *time.Timer
+	if minutesToAlert > 0 {
+		alertingIn, _ := time.ParseDuration(fmt.Sprintf("%vm", minutesToAlert))
+		alertTimer = time.AfterFunc(alertingIn, func() {
+			p.alertNotify(bot, service, message, name)
+		})
+	}
+
+	// when to give the starting alert
+	minutesToStart := minutes - nowMinutes
+	startingIn, _ := time.ParseDuration(fmt.Sprintf("%vm", minutesToStart))
+	startTimer := time.AfterFunc(startingIn, func() {
+		p.startNotify(bot, service, message, name)
+	})
+
+	// when to give the ending alert
+	minutesToEnd := minutesToStart + duration
+	endingIn, _ := time.ParseDuration(fmt.Sprintf("%vm", minutesToEnd))
+	endTimer := time.AfterFunc(endingIn, func() {
+		p.endNotify(bot, service, message, name)
+	})
+
+	// backup the war info
+	war := &War{
+		Channel:   message.Channel(),
+		Duration:  duration,
+		Name:      name,
+		Sprinters: []string{message.UserID()},
+		Start:     now.Add(startingIn).Unix(),
+
+		alertTimer: alertTimer,
+		startTimer: startTimer,
+		endTimer:   endTimer,
+	}
+	p.Wars[name] = war
+
+	reply := fmt.Sprintf(
+		"Ok, %s, you got it! I added you to this sprint. Use `%s %s` to get updates, `%s %s` to stop getting them, and `%s %s` to cancel this sprint.",
+		requester,
+		joinWarCommand, name,
+		leaveWarCommand, name,
+		endWarCommand, name,
+	)
+	service.SendMessage(message.Channel(), reply)
+}
+
+func timeWithoutSeconds() time.Time {
+	now := time.Now()
+	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0, now.Location())
+}
+
+func stringifySprinters(war *War) string {
+	notifyUsers := []string{}
+	for _, sprinter := range war.Sprinters {
+		notifyUsers = append(notifyUsers, fmt.Sprintf("<@%s>", sprinter))
+	}
+	return strings.Join(notifyUsers, " ")
+}
+
+func (p *WarPlugin) pickName() string {
+	name := fmt.Sprintf(
+		"%v%v%v",
+		rand.Intn(10),
+		rand.Intn(10),
+		rand.Intn(10),
+	)
+	_, ok := p.Wars[name]
+	if ok {
+		return p.pickName()
+	}
+
+	return name
+}
+
+func (p *WarPlugin) alertNotify(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, name string) {
+	war, ok := p.Wars[name]
+	if !ok {
+		return
+	}
+
+	notifyString := stringifySprinters(war)
+
+	duration := war.Duration
+	minuteString := "minutes"
+	if duration == 1 {
+		minuteString = "minute"
+	}
+
+	reply := fmt.Sprintf("Sprint %s is starting in one minute, when it will go for %v %s! %s", name, duration, minuteString, notifyString)
+	service.SendMessage(war.Channel, reply)
+}
+
+func (p *WarPlugin) startNotify(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, name string) {
+	war, ok := p.Wars[name]
+	if !ok {
+		return
+	}
+
+	notifyString := stringifySprinters(war)
+
+	duration := war.Duration
+	minuteString := "minutes"
+	if duration == 1 {
+		minuteString = "minute"
+	}
+	reply := fmt.Sprintf("Sprint %s starts now and goes for %v %s! %s", name, duration, minuteString, notifyString)
+	service.SendMessage(war.Channel, reply)
+}
+
+func (p *WarPlugin) endNotify(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, name string) {
+	war, ok := p.Wars[name]
+	if !ok {
+		return
+	}
+
+	notifyString := stringifySprinters(war)
+	reply := fmt.Sprintf("Sprint %s has ended! %s", name, notifyString)
+	service.SendMessage(war.Channel, reply)
+
+	delete(p.Wars, name)
 }
