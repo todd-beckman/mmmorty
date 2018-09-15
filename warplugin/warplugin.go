@@ -62,7 +62,7 @@ func (p *WarPlugin) Help(bot *mmmorty.Bot, service mmmorty.Discord, message mmmo
 	)[0])
 	help = append(help, mmmorty.CommandHelp(
 		service, doTheThing, "",
-		"Shorthand for \"start sprint for 15\" starting at the next time the minute hand ends in 0 or 5.",
+		"Shorthand for \"start sprint for 15\" starting in 4 minutes.",
 	)[0])
 	return help
 }
@@ -107,12 +107,8 @@ func (p *WarPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message m
 func (p *WarPlugin) handleDoTheThing(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	now := timeWithoutSeconds()
 	nowMinute := now.Minute()
-	// :00 + 5 - 0 = :05
-	// :01 + 5 - 1 = :05
-	// :02 + 5 - 2 = :05
-	// :03 + 5 - 3 = :05
-	// :04 + 5 - 4 = :05
-	startMinute := 5 - (nowMinute % 5)
+
+	startMinute := (nowMinute + 4) % 60
 
 	p.startWar(bot, service, message, startMinute, 15)
 }
