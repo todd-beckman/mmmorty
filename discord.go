@@ -415,6 +415,13 @@ func (d *Discord) GetRoles(channel string) []*discordgo.Role {
 	return g.Roles
 }
 
+// GuildLeave leaves a Guild.
+// guildID   : The ID of a Guild
+func (d *Discord) GuildLeave(guildID string) (err error) {
+	err = d.Session.GuildLeave(guildID)
+	return
+}
+
 // GuildMemberRoleAdd gives a guild member a role
 func (d *Discord) GuildMemberRoleAdd(guild, user, role string) bool {
 	err := d.Session.GuildMemberRoleAdd(guild, user, role)
