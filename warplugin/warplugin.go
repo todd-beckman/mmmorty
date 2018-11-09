@@ -14,9 +14,9 @@ import (
 
 const (
 	startWarCommand = "start sprint"
-	endWarCommand   = "end sprint"
-	joinWarCommand  = "join sprint"
-	leaveWarCommand = "leave sprint"
+	endWarCommand   = "end"
+	joinWarCommand  = "join"
+	leaveWarCommand = "leave"
 	doTheThing      = "do the thing"
 	maxWarCount     = 10
 )
@@ -174,17 +174,31 @@ func (p *WarPlugin) handleStartWarCommand(bot *mmmorty.Bot, service mmmorty.Disc
 	p.startWar(bot, service, message, minutes, duration)
 }
 
+func (p *WarPlugin) getNameFromParts(parts []string) string {
+	if len(parts) < 1 {
+		if len(p.Wars) != 1 {
+			return ""
+		}
+
+		// Guaranteed length  1
+		for k := range p.Wars {
+			return k
+		}
+	}
+	return parts[0]
+}
+
 func (p *WarPlugin) handleJoinWarCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	_, parts := mmmorty.ParseCommand(service, message)
-	if len(parts) < 2 {
+	name := p.getNameFromParts(parts)
+
+	if name == "" {
 		reply := fmt.Sprintf("Uh, %s, what was the sprint you wanted to join?", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
-
-	name := parts[1]
 
 	war, ok := p.Wars[name]
 	if !ok {
@@ -217,13 +231,13 @@ func (p *WarPlugin) handleLeaveWarCommand(bot *mmmorty.Bot, service mmmorty.Disc
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	_, parts := mmmorty.ParseCommand(service, message)
-	if len(parts) < 2 {
+	name := p.getNameFromParts(parts)
+
+	if name == "" {
 		reply := fmt.Sprintf("Uh, %s, what was the sprint you wanted to leave?", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
-
-	name := parts[1]
 
 	war, ok := p.Wars[name]
 	if !ok {
@@ -262,13 +276,13 @@ func (p *WarPlugin) handleEndWarCommand(bot *mmmorty.Bot, service mmmorty.Discor
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	_, parts := mmmorty.ParseCommand(service, message)
-	if len(parts) < 2 {
+	name := p.getNameFromParts(parts)
+
+	if name == "" {
 		reply := fmt.Sprintf("Uh, %s, what was the sprint you wanted to end?", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
-
-	name := parts[1]
 
 	war, ok := p.Wars[name]
 	if !ok {
