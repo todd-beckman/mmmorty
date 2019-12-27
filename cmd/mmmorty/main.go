@@ -17,6 +17,7 @@ import (
 	"github.com/todd-beckman/mmmorty/promptplugin"
 	"github.com/todd-beckman/mmmorty/quoteplugin"
 	"github.com/todd-beckman/mmmorty/warplugin"
+	"github.com/todd-beckman/mmmorty/wordplugin"
 )
 
 var (
@@ -33,6 +34,7 @@ var (
 	enableQuotes               bool
 	enablePrompts              bool
 	enableWars                 bool
+	enableWords                bool
 )
 
 const (
@@ -58,6 +60,7 @@ func init() {
 	flag.BoolVar(&enableQuotes, "quote", true, "Whether to enable quoting people")
 	flag.BoolVar(&enablePrompts, "prompt", true, "Whether to enable plot prompts")
 	flag.BoolVar(&enableWars, "war", false, "Whether to enable timed word wars")
+	flag.BoolVar(&enableWords, "word", true, "Whether to enable the dictionary plugin")
 
 	flag.Parse()
 
@@ -121,6 +124,9 @@ func main() {
 		}
 		if enableWars {
 			bot.RegisterPlugin(discord, warplugin.New())
+		}
+		if enableWords {
+			bot.RegisterPlugin(discord, wordplugin.New())
 		}
 	} else {
 		log.Println("(discordEmail and discordPassword) or discordToken is required.")

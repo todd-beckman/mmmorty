@@ -36,6 +36,14 @@ Quotes with links (quotes containing the string "http") will be rejected.
 
 If you want to opt out of this feature, start the bot with the `-quote=FALSE` command line flag.
 
+#### Dictionary
+
+Use `@<botname> define <word>` to get the definition of a word.
+
+Words can be added by server staff with
+`@<botname> add word <word> <definition>` and
+deleted with `@<botname> delete <word>`.
+
 #### Plot Twists
 
 Plot twists work the same as Quotes except that they do not have an associated author. They are handy for users to submit ideas for arbitrary plot twists and prompts to help with storywriting. They are added with this:
