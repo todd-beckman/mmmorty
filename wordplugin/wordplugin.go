@@ -138,7 +138,7 @@ func (p *WordPlugin) handleDeleteWord(bot *mmmorty.Bot, service mmmorty.Discord,
 		return
 	}
 
-	word := parts[1]
+	word := strings.ToLower(parts[1])
 	if _, ok := p.WordsByGuild[guildID].Words[word]; !ok {
 		reply := fmt.Sprintf("Uh, %s, no one told me to remember that word.", requester)
 		service.SendMessage(message.Channel(), reply)
@@ -164,7 +164,7 @@ func (p *WordPlugin) handleDefine(bot *mmmorty.Bot, service mmmorty.Discord, mes
 		return
 	}
 	word := parts[0]
-	definition, ok := p.WordsByGuild[guildID].Words[word]
+	definition, ok := p.WordsByGuild[guildID].Words[strings.ToLower(word)]
 	if !ok {
 		reply := fmt.Sprintf("Uh, %s, no one told me to remember %s.", requester, word)
 		service.SendMessage(message.Channel(), reply)
