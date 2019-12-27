@@ -87,11 +87,12 @@ func (p *WordPlugin) handleAddWord(bot *mmmorty.Bot, service mmmorty.Discord, me
 		return
 	}
 
-	if !service.IsModerator(message) {
-		reply := fmt.Sprintf("Uh, %s, I don't think I can let you do that.", requester)
-		service.SendMessage(message.Channel(), reply)
-		return
-	}
+	// Should be okay on small servers to let anyone define words.
+	// if !service.IsModerator(message) {
+	// 	reply := fmt.Sprintf("Uh, %s, I don't think I can let you do that.", requester)
+	// 	service.SendMessage(message.Channel(), reply)
+	// 	return
+	// }
 
 	_, parts := mmmorty.ParseCommand(service, message)
 
@@ -123,11 +124,12 @@ func (p *WordPlugin) handleDeleteWord(bot *mmmorty.Bot, service mmmorty.Discord,
 		return
 	}
 
-	if !service.IsModerator(message) {
-		reply := fmt.Sprintf("Uh, %s, I don't think I can let you do that.", requester)
-		service.SendMessage(message.Channel(), reply)
-		return
-	}
+	// Should be okay on small servers to let anyone define words.
+	// if !service.IsModerator(message) {
+	// 	reply := fmt.Sprintf("Uh, %s, I don't think I can let you do that.", requester)
+	// 	service.SendMessage(message.Channel(), reply)
+	// 	return
+	// }
 
 	_, parts := mmmorty.ParseCommand(service, message)
 	if len(parts) != 2 {
