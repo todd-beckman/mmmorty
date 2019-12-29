@@ -163,8 +163,8 @@ func (p *WordPlugin) handleDefine(bot *mmmorty.Bot, service mmmorty.Discord, mes
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
-	word := parts[0]
-	definition, ok := p.WordsByGuild[guildID].Words[strings.ToLower(word)]
+	word := strings.ToLower(parts[0])
+	definition, ok := p.WordsByGuild[guildID].Words[word]
 	if !ok {
 		reply := fmt.Sprintf("Uh, %s, no one told me to remember %s.", requester, word)
 		service.SendMessage(message.Channel(), reply)
