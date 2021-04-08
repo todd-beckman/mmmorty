@@ -10,7 +10,7 @@ import (
 )
 
 const colorCommand = "color me"
-const manageColorCommand = "manage color"
+const manageColorCommand = "pallet color"
 const stopManagingCommand = "stop managing"
 
 type colorSet struct {
