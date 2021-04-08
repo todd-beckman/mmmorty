@@ -11,6 +11,7 @@ import (
 
 	"github.com/todd-beckman/mmmorty"
 	"github.com/todd-beckman/mmmorty/colorplugin"
+	"github.com/todd-beckman/mmmorty/roleplugin"
 	"github.com/todd-beckman/mmmorty/diceplugin"
 	"github.com/todd-beckman/mmmorty/evalplugin"
 	"github.com/todd-beckman/mmmorty/pickplugin"
@@ -28,6 +29,7 @@ var (
 	discordOwnerUserID         string
 	discordShards              int
 	enableColor                bool
+	enableRoles                bool
 	enableDice                 bool
 	enableEval                 bool
 	enablePicking              bool
@@ -57,8 +59,9 @@ func init() {
 	flag.BoolVar(&enableDice, "dice", true, "Whether to enable rolling dice")
 	flag.BoolVar(&enableEval, "eval", true, "Whether to enable eval by default")
 	flag.BoolVar(&enablePicking, "pick", true, "Whether to enable picking things")
-	flag.BoolVar(&enableQuotes, "quote", true, "Whether to enable quoting people")
 	flag.BoolVar(&enablePrompts, "prompt", true, "Whether to enable plot prompts")
+	flag.BoolVar(&enableQuotes, "quote", true, "Whether to enable quoting people")
+	flag.BoolVar(&enableRoles, "roles", true, "Whether to enable setting roles")
 	flag.BoolVar(&enableWars, "war", false, "Whether to enable timed word wars")
 	flag.BoolVar(&enableWords, "word", true, "Whether to enable the dictionary plugin")
 
@@ -121,6 +124,9 @@ func main() {
 		}
 		if enablePrompts {
 			bot.RegisterPlugin(discord, promptplugin.New())
+		}
+		if enableRoles {
+			bot.RegisterPlugin(discord, roleplugin.New())
 		}
 		if enableWars {
 			bot.RegisterPlugin(discord, warplugin.New())

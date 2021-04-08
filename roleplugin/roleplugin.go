@@ -1,4 +1,4 @@
-package colorplugin
+package roleplugin
 
 import (
 	"encoding/json"
@@ -9,18 +9,18 @@ import (
 	"github.com/todd-beckman/mmmorty"
 )
 
-const colorCommand = "color me"
-const manageColorCommand = "manage color"
+const rolesCommand = "i am"
+const manageRolesCommand = "manage roles"
 const stopManagingCommand = "stop managing"
 
-type colorSet struct {
+type rolesSet struct {
 	ManagedRoles map[string]bool `json:"managedRoles"`
 }
 
-// ColorPlugin is the save data for this plugin
-type ColorPlugin struct {
+// RolePlugin is the save data for this plugin
+type RolePlugin struct {
 	bot          *mmmorty.Bot
-	RolesByGuild map[string]colorSet `json:"rolesByGuild"`
+	RolesByGuild map[string]rolesSet `json:"rolesByGuild"`
 }
 
 // Used to determine if the role is more than aesthetic
@@ -43,7 +43,7 @@ func doesRoleHaveAuth(permissions int64) bool {
 	return permissions&authPermissions > 0
 }
 
-func (p *ColorPlugin) getPrintableRoles(guildID string) []string {
+func (p *RolePlugin) getPrintableRoles(guildID string) []string {
 	printableRoles := []string{}
 	for role, isManaged := range p.RolesByGuild[guildID].ManagedRoles {
 		if isManaged {
@@ -54,13 +54,13 @@ func (p *ColorPlugin) getPrintableRoles(guildID string) []string {
 }
 
 // Help gets the usage for this plugin
-func (p *ColorPlugin) Help(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, detailed bool) []string {
-	help := mmmorty.CommandHelp(service, colorCommand, "color", "assigns the desired color if this server supports it and the color is available")
+func (p *RolePlugin) Help(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, detailed bool) []string {
+	help := mmmorty.CommandHelp(service, rolesCommand, "role", "assigns the desired role if this server supports it.")
 	return help
 }
 
 // Load loads this plugin from the given data
-func (p *ColorPlugin) Load(bot *mmmorty.Bot, service mmmorty.Discord, data []byte) error {
+func (p *RolePlugin) Load(bot *mmmorty.Bot, service mmmorty.Discord, data []byte) error {
 	if data != nil {
 		if err := json.Unmarshal(data, p); err != nil {
 			log.Println("Error loading data", err)
@@ -72,7 +72,7 @@ func (p *ColorPlugin) Load(bot *mmmorty.Bot, service mmmorty.Discord, data []byt
 }
 
 // Message is the command handler for this plugin
-func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
+func (p *RolePlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	defer bot.MessageRecover(service, message.Channel())
 
 	if service.IsMe(message) {
@@ -95,37 +95,37 @@ func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message
 	guildID := discordChannel.GuildID
 
 	if p.RolesByGuild == nil {
-		p.RolesByGuild = map[string]colorSet{
-			guildID: colorSet{},
+		p.RolesByGuild = map[string]rolesSet{
+			guildID: rolesSet{},
 		}
 	}
 
 	if p.RolesByGuild[guildID].ManagedRoles == nil {
-		p.RolesByGuild[guildID] = colorSet{
+		p.RolesByGuild[guildID] = rolesSet{
 			ManagedRoles: map[string]bool{},
 		}
 	}
 
-	if mmmorty.MatchesCommand(service, colorCommand, message) {
-		p.handleColorMe(bot, service, message, guildID)
-	} else if mmmorty.MatchesCommand(service, manageColorCommand, message) {
-		p.handleManageColor(bot, service, message, guildID)
+	if mmmorty.MatchesCommand(service, rolesCommand, message) {
+		p.handleIAm(bot, service, message, guildID)
+	} else if mmmorty.MatchesCommand(service, manageRolesCommand, message) {
+		p.handleManageRole(bot, service, message, guildID)
 	} else if mmmorty.MatchesCommand(service, stopManagingCommand, message) {
 		p.handleStopManaging(bot, service, message, guildID)
 	}
 }
 
-func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
+func (p *RolePlugin) handleIAm(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	if service.IsPrivate(message) {
-		reply := fmt.Sprintf("Uh, %s, I cannot color you in private.", requester)
+		reply := fmt.Sprintf("Uh, %s, I cannot assign roles in private.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
 
 	if availableRoles := p.getPrintableRoles(guildID); len(availableRoles) == 0 {
-		reply := fmt.Sprintf("Uh, %s, I don't think this server lets me set your color.", requester)
+		reply := fmt.Sprintf("Uh, %s, I don't think this server lets me set that role.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
@@ -133,69 +133,45 @@ func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Discord, m
 	_, parts := mmmorty.ParseCommand(service, message)
 
 	if len(parts) == 1 {
-		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a color.", requester)
-		service.SendMessage(message.Channel(), reply)
-		return
-	} else if len(parts) > 2 {
-		reply := fmt.Sprintf("Uh, %s, I can't give you more than one color.", requester)
+		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a role.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
 
-	color := strings.ToLower(parts[1])
-
-	role := service.GetRoleByName(message.Channel(), color)
-
-	if role == nil {
-		reply := fmt.Sprintf("Uh, %s, I can't find a role called %s", requester, color)
-		service.SendMessage(message.Channel(), reply)
-		return
-	}
-
-	if doesRoleHaveAuth(role.Permissions) {
-		reply := fmt.Sprintf("Uh, %s, I think %s is more than just a colored role.", requester, color)
-		service.SendMessage(message.Channel(), reply)
-		return
-	}
-
-	// Remove all managed roles first so the user doesn't have multiple colors
-	userRoles := service.UserRoles(guildID, message.UserID())
-	for _, userRole := range userRoles {
-		for r, isManaged := range p.RolesByGuild[guildID].ManagedRoles {
-			if !isManaged {
-				continue
-			}
-
-			managedRole := service.GetRoleByName(message.Channel(), r)
-			if userRole == managedRole.ID {
-				ok := service.GuildMemberRoleRemove(guildID, message.UserID(), userRole)
-				if !ok {
-					reply := fmt.Sprintf("Uh, %s, something went wrong. Are you sure I can manage %v?", requester, color)
-					service.SendMessage(message.Channel(), reply)
-					continue
-				}
-			}
+	for i := 1; i < len(parts); i++ {
+		roleName := strings.ToLower(parts[i])
+		role := service.GetRoleByName(message.Channel(), roleName)
+		if role == nil {
+			reply := fmt.Sprintf("Uh, %s, I can't find a role called %s", requester, roleName)
+			service.SendMessage(message.Channel(), reply)
+			return
 		}
-	}
 
-	ok := service.GuildMemberRoleAdd(guildID, message.UserID(), role.ID)
-	if !ok {
-		reply := fmt.Sprintf("Uh, %s, something went wrong. Are you sure I can let you be %v?", requester, color)
+		if doesRoleHaveAuth(role.Permissions) {
+			reply := fmt.Sprintf("Uh, %s, I'm not supposed to share that role.", requester)
+			service.SendMessage(message.Channel(), reply)
+			return
+		}
+
+		ok := service.GuildMemberRoleAdd(guildID, message.UserID(), role.ID)
+		if !ok {
+			reply := fmt.Sprintf("Uh, %s, something went wrong. Are you sure I can let you be %v?", requester, roleName)
+			service.SendMessage(message.Channel(), reply)
+			return
+		}
+
+		reply := fmt.Sprintf("You got it, %s! You are now %s", requester, roleName)
 		service.SendMessage(message.Channel(), reply)
-		return
 	}
-
-	reply := fmt.Sprintf("You got it, %s! You are now %s", requester, color)
-	service.SendMessage(message.Channel(), reply)
 	return
 
 }
 
-func (p *ColorPlugin) handleManageColor(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
+func (p *RolePlugin) handleManageRole(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	if service.IsPrivate(message) {
-		reply := fmt.Sprintf("Uh, %s, I cannot color you in private.", requester)
+		reply := fmt.Sprintf("Uh, %s, I cannot manage roles in private.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
@@ -209,34 +185,34 @@ func (p *ColorPlugin) handleManageColor(bot *mmmorty.Bot, service mmmorty.Discor
 	_, parts := mmmorty.ParseCommand(service, message)
 
 	if len(parts) == 1 {
-		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a color.", requester)
+		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a role.", requester)
+
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
 
 	for _, c := range parts[1:] {
-		color := strings.ToLower(c)
-		if p.RolesByGuild[guildID].ManagedRoles[color] {
-			reply := fmt.Sprintf("Uh, %s, I am already managing %s", requester, color)
+		roleName := strings.ToLower(c)
+		if p.RolesByGuild[guildID].ManagedRoles[roleName] {
+			reply := fmt.Sprintf("Uh, %s, I am already managing %s", requester, roleName)
 			service.SendMessage(message.Channel(), reply)
 			continue
 		}
 
-		role := service.GetRoleByName(message.Channel(), color)
-
+		role := service.GetRoleByName(message.Channel(), roleName)
 		if role == nil {
-			reply := fmt.Sprintf("Uh, %s, I can't find a role called %s", requester, color)
+			reply := fmt.Sprintf("Uh, %s, I can't find a role called %s", requester, roleName)
 			service.SendMessage(message.Channel(), reply)
 			continue
 		}
 
 		if doesRoleHaveAuth(role.Permissions) {
-			reply := fmt.Sprintf("Uh, %s, I think %s is more than just a colored role.", requester, color)
+			reply := fmt.Sprintf("Uh, %s, I don't think I can manage that role.", requester, roleName)
 			service.SendMessage(message.Channel(), reply)
 			continue
 		}
 
-		p.RolesByGuild[guildID].ManagedRoles[color] = true
+		p.RolesByGuild[guildID].ManagedRoles[roleName] = true
 	}
 
 	printableRoles := p.getPrintableRoles(guildID)
@@ -244,7 +220,7 @@ func (p *ColorPlugin) handleManageColor(bot *mmmorty.Bot, service mmmorty.Discor
 	service.SendMessage(message.Channel(), reply)
 }
 
-func (p *ColorPlugin) handleStopManaging(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
+func (p *RolePlugin) handleStopManaging(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 
 	if message.UserID() != service.OwnerUserID {
@@ -256,20 +232,20 @@ func (p *ColorPlugin) handleStopManaging(bot *mmmorty.Bot, service mmmorty.Disco
 	_, parts := mmmorty.ParseCommand(service, message)
 
 	if len(parts) == 1 {
-		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a color.", requester)
+		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a role.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
 
 	for _, c := range parts[1:] {
-		color := strings.ToLower(c)
-		if !p.RolesByGuild[guildID].ManagedRoles[color] {
-			reply := fmt.Sprintf("Uh, %s, I'm not managing %s", requester, color)
+		role := strings.ToLower(c)
+		if !p.RolesByGuild[guildID].ManagedRoles[role] {
+			reply := fmt.Sprintf("Uh, %s, I'm not managing %s", requester, role)
 			service.SendMessage(message.Channel(), reply)
 			continue
 		}
 
-		delete(p.RolesByGuild[guildID].ManagedRoles, color)
+		delete(p.RolesByGuild[guildID].ManagedRoles, role)
 	}
 
 	printableRoles := p.getPrintableRoles(guildID)
@@ -278,18 +254,18 @@ func (p *ColorPlugin) handleStopManaging(bot *mmmorty.Bot, service mmmorty.Disco
 }
 
 // Save will save plugin state to a byte array.
-func (p *ColorPlugin) Save() ([]byte, error) {
+func (p *RolePlugin) Save() ([]byte, error) {
 	return json.Marshal(p)
 }
 
 // Name returns the name of the plugin.
-func (p *ColorPlugin) Name() string {
-	return "Color"
+func (p *RolePlugin) Name() string {
+	return "Roles"
 }
 
 // New will create a new Reminder plugin.
 func New() mmmorty.Plugin {
-	return &ColorPlugin{
-		RolesByGuild: map[string]colorSet{},
+	return &RolePlugin{
+		RolesByGuild: map[string]rolesSet{},
 	}
 }

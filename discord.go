@@ -503,7 +503,7 @@ func (d *Discord) Guilds() []*discordgo.Guild {
 }
 
 // UserChannelPermissions gets the bits for the user's permissions
-func (d *Discord) UserChannelPermissions(userID, channelID string) (apermissions int, err error) {
+func (d *Discord) UserChannelPermissions(userID, channelID string) (apermissions int64, err error) {
 	for _, s := range d.Sessions {
 		apermissions, err = s.State.UserChannelPermissions(userID, channelID)
 		if err == nil {
