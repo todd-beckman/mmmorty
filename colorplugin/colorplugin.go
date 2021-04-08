@@ -132,17 +132,17 @@ func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Discord, m
 
 	_, parts := mmmorty.ParseCommand(service, message)
 
-	if len(parts) == 1 {
+	if len(parts) < 1 {
 		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a color.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
-	} else if len(parts) > 2 {
+	} else if len(parts) > 1 {
 		reply := fmt.Sprintf("Uh, %s, I can't give you more than one color.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
 
-	color := strings.ToLower(parts[1])
+	color := strings.ToLower(parts[0])
 
 	role := service.GetRoleByName(message.Channel(), color)
 
@@ -208,13 +208,13 @@ func (p *ColorPlugin) handleManageColor(bot *mmmorty.Bot, service mmmorty.Discor
 
 	_, parts := mmmorty.ParseCommand(service, message)
 
-	if len(parts) == 1 {
+	if len(parts) < 1 {
 		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a color.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
 
-	for _, c := range parts[1:] {
+	for _, c := range parts {
 		color := strings.ToLower(c)
 		if p.RolesByGuild[guildID].ManagedRoles[color] {
 			reply := fmt.Sprintf("Uh, %s, I am already managing %s", requester, color)
@@ -255,13 +255,13 @@ func (p *ColorPlugin) handleStopManaging(bot *mmmorty.Bot, service mmmorty.Disco
 
 	_, parts := mmmorty.ParseCommand(service, message)
 
-	if len(parts) == 1 {
+	if len(parts) < 1 {
 		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a color.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
 
-	for _, c := range parts[1:] {
+	for _, c := range parts {
 		color := strings.ToLower(c)
 		if !p.RolesByGuild[guildID].ManagedRoles[color] {
 			reply := fmt.Sprintf("Uh, %s, I'm not managing %s", requester, color)

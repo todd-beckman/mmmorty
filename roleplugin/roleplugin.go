@@ -132,14 +132,13 @@ func (p *RolePlugin) handleIAm(bot *mmmorty.Bot, service mmmorty.Discord, messag
 
 	_, parts := mmmorty.ParseCommand(service, message)
 
-	if len(parts) == 1 {
+	if len(parts) < 1 {
 		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a role.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
 
-	for i := 1; i < len(parts); i++ {
-		roleName := strings.ToLower(parts[i])
+	for _, roleName := range parts {
 		role := service.GetRoleByName(message.Channel(), roleName)
 		if role == nil {
 			reply := fmt.Sprintf("Uh, %s, I can't find a role called %s", requester, roleName)
@@ -184,14 +183,14 @@ func (p *RolePlugin) handleManageRole(bot *mmmorty.Bot, service mmmorty.Discord,
 
 	_, parts := mmmorty.ParseCommand(service, message)
 
-	if len(parts) == 1 {
+	if len(parts) < 1 {
 		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a role.", requester)
 
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
 
-	for _, c := range parts[1:] {
+	for _, c := range parts {
 		roleName := strings.ToLower(c)
 		if p.RolesByGuild[guildID].ManagedRoles[roleName] {
 			reply := fmt.Sprintf("Uh, %s, I am already managing %s", requester, roleName)
@@ -231,13 +230,13 @@ func (p *RolePlugin) handleStopManaging(bot *mmmorty.Bot, service mmmorty.Discor
 
 	_, parts := mmmorty.ParseCommand(service, message)
 
-	if len(parts) == 1 {
+	if len(parts) < 1 {
 		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a role.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
 
-	for _, c := range parts[1:] {
+	for _, c := range parts {
 		role := strings.ToLower(c)
 		if !p.RolesByGuild[guildID].ManagedRoles[role] {
 			reply := fmt.Sprintf("Uh, %s, I'm not managing %s", requester, role)
