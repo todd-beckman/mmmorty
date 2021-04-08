@@ -132,17 +132,17 @@ func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Discord, m
 
 	_, parts := mmmorty.ParseCommand(service, message)
 
-	if len(parts) < 1 {
+	if len(parts) == 1 {
 		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a color.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
-	} else if len(parts) > 1 {
+	} else if len(parts) > 2 {
 		reply := fmt.Sprintf("Uh, %s, I can't give you more than one color.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
 
-	color := strings.ToLower(parts[0])
+	color := strings.ToLower(parts[1])
 
 	role := service.GetRoleByName(message.Channel(), color)
 

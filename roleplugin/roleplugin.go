@@ -132,13 +132,13 @@ func (p *RolePlugin) handleIAm(bot *mmmorty.Bot, service mmmorty.Discord, messag
 
 	_, parts := mmmorty.ParseCommand(service, message)
 
-	if len(parts) < 1 {
+	if len(parts) == 1 {
 		reply := fmt.Sprintf("Uh, %s, I think you forgot to name a role.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
 
-	for _, roleName := range parts {
+	for _, roleName := range parts[1:] {
 		role := service.GetRoleByName(message.Channel(), roleName)
 		if role == nil {
 			reply := fmt.Sprintf("Uh, %s, I can't find a role called %s", requester, roleName)
