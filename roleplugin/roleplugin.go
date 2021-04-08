@@ -10,8 +10,8 @@ import (
 )
 
 const rolesCommand = "i am"
-const manageRolesCommand = "manage roles"
-const stopManagingCommand = "stop managing"
+const manageRolesCommand = "managerole"
+const stopManagingCommand = "stopmanagingrole"
 
 type rolesSet struct {
 	ManagedRoles map[string]bool `json:"managedRoles"`

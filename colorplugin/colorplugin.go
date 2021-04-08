@@ -10,8 +10,8 @@ import (
 )
 
 const colorCommand = "color me"
-const manageColorCommand = "pallet color"
-const stopManagingCommand = "stop managing"
+const manageColorCommand = "managecolor"
+const stopManagingCommand = "stopmanagingcolor"
 
 type colorSet struct {
 	ManagedRoles map[string]bool `json:"managedRoles"`
