@@ -30,8 +30,22 @@ type Quote struct {
 
 // QuotePlugin is this plugin's save structure
 type QuotePlugin struct {
-	bot    *mmmorty.Bot
 	Quotes map[string][]Quote `json:"quotes"`
+}
+
+type handleFunc func(*mmmorty.Bot, mmmorty.Discord, mmmorty.DiscordMessage, string)
+
+func (p *QuotePlugin) findHandler(service mmmorty.Discord, message mmmorty.DiscordMessage) handleFunc {
+	handlers := map[string]handleFunc{
+		addQuoteCommand: p.handleAddQuoteCommand,
+		quoteCommand:    p.handleQuoteCommand,
+	}
+	for c, h := range handlers {
+		if mmmorty.MatchesCommand(service, c, message) {
+			return h
+		}
+	}
+	return nil
 }
 
 // Help gets usage info for this plugin
@@ -56,8 +70,12 @@ func (p *QuotePlugin) Load(bot *mmmorty.Bot, service mmmorty.Discord, data []byt
 // Message is the entry point handler for this bot
 func (p *QuotePlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	defer bot.MessageRecover(service, message.Channel())
-
 	if service.IsMe(message) {
+		return
+	}
+
+	handler := p.findHandler(service, message)
+	if handler == nil {
 		return
 	}
 
@@ -71,11 +89,7 @@ func (p *QuotePlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message
 	}
 	guildID := discordChannel.GuildID
 
-	if mmmorty.MatchesCommand(service, addQuoteCommand, message) {
-		p.handleAddQuoteCommand(bot, service, message, guildID)
-	} else if mmmorty.MatchesCommand(service, quoteCommand, message) {
-		p.handleQuoteCommand(bot, service, message, guildID)
-	}
+	handler(bot, service, message, guildID)
 }
 
 func (p *QuotePlugin) handleAddQuoteCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
@@ -92,8 +106,6 @@ func (p *QuotePlugin) handleAddQuoteCommand(bot *mmmorty.Bot, service mmmorty.Di
 		service.SendMessage(message.Channel(), reply)
 		return
 	}
-
-	fmt.Println(guildID)
 
 	if strings.Contains(message.Message(), "http") {
 		reply := fmt.Sprintf("Uh, %s, I would rather not remember quotes with links.", requester)
@@ -137,7 +149,7 @@ func (p *QuotePlugin) handleAddQuoteCommand(bot *mmmorty.Bot, service mmmorty.Di
 
 	if p.Quotes == nil {
 		p.Quotes = map[string][]Quote{
-			guildID: []Quote{},
+			guildID: {},
 		}
 	}
 	if p.Quotes[guildID] == nil {

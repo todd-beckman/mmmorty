@@ -19,7 +19,6 @@ type rolesSet struct {
 
 // RolePlugin is the save data for this plugin
 type RolePlugin struct {
-	bot          *mmmorty.Bot
 	RolesByGuild map[string]rolesSet `json:"rolesByGuild"`
 }
 
@@ -41,6 +40,22 @@ var authPermissions int64 = 0x00000002 | // kick
 
 func doesRoleHaveAuth(permissions int64) bool {
 	return permissions&authPermissions > 0
+}
+
+type handleFunc func(*mmmorty.Bot, mmmorty.Discord, mmmorty.DiscordMessage, string)
+
+func (p *RolePlugin) findHandler(service mmmorty.Discord, message mmmorty.DiscordMessage) handleFunc {
+	handlers := map[string]handleFunc{
+		rolesCommand:        p.handleIAm,
+		manageRolesCommand:  p.handleManageRole,
+		stopManagingCommand: p.handleStopManaging,
+	}
+	for c, h := range handlers {
+		if mmmorty.MatchesCommand(service, c, message) {
+			return h
+		}
+	}
+	return nil
 }
 
 func (p *RolePlugin) getPrintableRoles(guildID string) []string {
@@ -74,17 +89,16 @@ func (p *RolePlugin) Load(bot *mmmorty.Bot, service mmmorty.Discord, data []byte
 // Message is the command handler for this plugin
 func (p *RolePlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	defer bot.MessageRecover(service, message.Channel())
-
 	if service.IsMe(message) {
+		return
+	}
+
+	handler := p.findHandler(service, message)
+	if handler == nil {
 		return
 	}
 
 	requester := fmt.Sprintf("<@%s>", message.UserID())
-
-	if service.IsMe(message) {
-		return
-	}
-
 	channelID := message.Channel()
 	discordChannel, err := service.Channel(channelID)
 	if err != nil {
@@ -96,7 +110,7 @@ func (p *RolePlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message 
 
 	if p.RolesByGuild == nil {
 		p.RolesByGuild = map[string]rolesSet{
-			guildID: rolesSet{},
+			guildID: {},
 		}
 	}
 
@@ -106,13 +120,7 @@ func (p *RolePlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message 
 		}
 	}
 
-	if mmmorty.MatchesCommand(service, rolesCommand, message) {
-		p.handleIAm(bot, service, message, guildID)
-	} else if mmmorty.MatchesCommand(service, manageRolesCommand, message) {
-		p.handleManageRole(bot, service, message, guildID)
-	} else if mmmorty.MatchesCommand(service, stopManagingCommand, message) {
-		p.handleStopManaging(bot, service, message, guildID)
-	}
+	handler(bot, service, message, guildID)
 }
 
 func (p *RolePlugin) handleIAm(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
@@ -162,8 +170,6 @@ func (p *RolePlugin) handleIAm(bot *mmmorty.Bot, service mmmorty.Discord, messag
 		reply := fmt.Sprintf("You got it, %s! You are now %s", requester, roleName)
 		service.SendMessage(message.Channel(), reply)
 	}
-	return
-
 }
 
 func (p *RolePlugin) handleManageRole(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
@@ -206,7 +212,7 @@ func (p *RolePlugin) handleManageRole(bot *mmmorty.Bot, service mmmorty.Discord,
 		}
 
 		if doesRoleHaveAuth(role.Permissions) {
-			reply := fmt.Sprintf("Uh, %s, I don't think I can manage that role.", requester, roleName)
+			reply := fmt.Sprintf("Uh, %s, I don't think I can manage that role.", requester)
 			service.SendMessage(message.Channel(), reply)
 			continue
 		}

@@ -9,9 +9,11 @@ import (
 	"github.com/todd-beckman/mmmorty"
 )
 
-const colorCommand = "color me"
-const manageColorCommand = "managecolor"
-const stopManagingCommand = "stopmanagingcolor"
+const (
+	colorCommand        = "color me"
+	manageColorCommand  = "managecolor"
+	stopManagingCommand = "stopmanagingcolor"
+)
 
 type colorSet struct {
 	ManagedRoles map[string]bool `json:"managedRoles"`
@@ -19,7 +21,6 @@ type colorSet struct {
 
 // ColorPlugin is the save data for this plugin
 type ColorPlugin struct {
-	bot          *mmmorty.Bot
 	RolesByGuild map[string]colorSet `json:"rolesByGuild"`
 }
 
@@ -41,6 +42,22 @@ var authPermissions int64 = 0x00000002 | // kick
 
 func doesRoleHaveAuth(permissions int64) bool {
 	return permissions&authPermissions > 0
+}
+
+type handleFunc func(*mmmorty.Bot, mmmorty.Discord, mmmorty.DiscordMessage, string)
+
+func (p *ColorPlugin) findHandler(service mmmorty.Discord, message mmmorty.DiscordMessage) handleFunc {
+	handlers := map[string]handleFunc{
+		colorCommand:        p.handleColorMe,
+		manageColorCommand:  p.handleManageColor,
+		stopManagingCommand: p.handleStopManaging,
+	}
+	for c, h := range handlers {
+		if mmmorty.MatchesCommand(service, c, message) {
+			return h
+		}
+	}
+	return nil
 }
 
 func (p *ColorPlugin) getPrintableRoles(guildID string) []string {
@@ -74,17 +91,16 @@ func (p *ColorPlugin) Load(bot *mmmorty.Bot, service mmmorty.Discord, data []byt
 // Message is the command handler for this plugin
 func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	defer bot.MessageRecover(service, message.Channel())
-
 	if service.IsMe(message) {
+		return
+	}
+
+	handler := p.findHandler(service, message)
+	if handler == nil {
 		return
 	}
 
 	requester := fmt.Sprintf("<@%s>", message.UserID())
-
-	if service.IsMe(message) {
-		return
-	}
-
 	channelID := message.Channel()
 	discordChannel, err := service.Channel(channelID)
 	if err != nil {
@@ -96,7 +112,7 @@ func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message
 
 	if p.RolesByGuild == nil {
 		p.RolesByGuild = map[string]colorSet{
-			guildID: colorSet{},
+			guildID: {},
 		}
 	}
 
@@ -106,13 +122,7 @@ func (p *ColorPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message
 		}
 	}
 
-	if mmmorty.MatchesCommand(service, colorCommand, message) {
-		p.handleColorMe(bot, service, message, guildID)
-	} else if mmmorty.MatchesCommand(service, manageColorCommand, message) {
-		p.handleManageColor(bot, service, message, guildID)
-	} else if mmmorty.MatchesCommand(service, stopManagingCommand, message) {
-		p.handleStopManaging(bot, service, message, guildID)
-	}
+	handler(bot, service, message, guildID)
 }
 
 func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
@@ -187,8 +197,6 @@ func (p *ColorPlugin) handleColorMe(bot *mmmorty.Bot, service mmmorty.Discord, m
 
 	reply := fmt.Sprintf("You got it, %s! You are now %s", requester, color)
 	service.SendMessage(message.Channel(), reply)
-	return
-
 }
 
 func (p *ColorPlugin) handleManageColor(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {

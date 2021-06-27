@@ -28,8 +28,22 @@ type Prompt struct {
 
 // PromptPlugin is the save structure of this plugin
 type PromptPlugin struct {
-	bot     *mmmorty.Bot
 	Prompts map[string][]Prompt `json:"prompts"`
+}
+
+type handleFunc func(*mmmorty.Bot, mmmorty.Discord, mmmorty.DiscordMessage, string)
+
+func (p *PromptPlugin) findHandler(service mmmorty.Discord, message mmmorty.DiscordMessage) handleFunc {
+	handlers := map[string]handleFunc{
+		addPromptCommand: p.handleAddPromptCommand,
+		promptCommand:    p.handlePromptCommand,
+	}
+	for c, h := range handlers {
+		if mmmorty.MatchesCommand(service, c, message) {
+			return h
+		}
+	}
+	return nil
 }
 
 // Help gets the usage for this plugin
@@ -54,8 +68,12 @@ func (p *PromptPlugin) Load(bot *mmmorty.Bot, service mmmorty.Discord, data []by
 // Message is the command handler for this plugin
 func (p *PromptPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	defer bot.MessageRecover(service, message.Channel())
-
 	if service.IsMe(message) {
+		return
+	}
+
+	handler := p.findHandler(service, message)
+	if handler == nil {
 		return
 	}
 
@@ -69,11 +87,7 @@ func (p *PromptPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, messag
 	}
 	guildID := discordChannel.GuildID
 
-	if mmmorty.MatchesCommand(service, addPromptCommand, message) {
-		p.handleAddPromptCommand(bot, service, message, guildID)
-	} else if mmmorty.MatchesCommand(service, promptCommand, message) {
-		p.handlePromptCommand(bot, service, message, guildID)
-	}
+	handler(bot, service, message, guildID)
 }
 
 func (p *PromptPlugin) handleAddPromptCommand(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
@@ -117,7 +131,7 @@ func (p *PromptPlugin) handleAddPromptCommand(bot *mmmorty.Bot, service mmmorty.
 
 	if p.Prompts == nil {
 		p.Prompts = map[string][]Prompt{
-			guildID: []Prompt{},
+			guildID: {},
 		}
 	}
 	if p.Prompts[guildID] == nil {

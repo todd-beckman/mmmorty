@@ -1,3 +1,5 @@
 cmd/mmmorty/mmmorty
 Discord/
 mmmorty-*.env
+go.mod
+go.sum

@@ -38,7 +38,6 @@ type War struct {
 
 // WarPlugin is this plugin's save structure
 type WarPlugin struct {
-	bot  *mmmorty.Bot
 	Wars map[string]*War `json:"wars"` // map of name to war
 }
 
@@ -107,9 +106,7 @@ func (p *WarPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message m
 func (p *WarPlugin) handleDoTheThing(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage) {
 	now := timeWithoutSeconds()
 	nowMinute := now.Minute()
-
 	startMinute := (nowMinute + 4) % 60
-
 	p.startWar(bot, service, message, startMinute, 15)
 }
 

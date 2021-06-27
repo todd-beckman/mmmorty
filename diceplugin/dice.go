@@ -26,9 +26,7 @@ var (
 )
 
 // DicePlugin is the save structure for the plugin
-type DicePlugin struct {
-	bot *mmmorty.Bot
-}
+type DicePlugin struct{}
 
 // Help gets the usage for this plugin
 func (p *DicePlugin) Help(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, detailed bool) []string {
@@ -66,7 +64,7 @@ func (p *DicePlugin) handleRollCommand(bot *mmmorty.Bot, service mmmorty.Discord
 
 	_, parts := mmmorty.ParseCommand(service, message)
 
-	if len(parts) < 0 {
+	if len(parts) == 0 {
 		reply := fmt.Sprintf("Uh, %s, could you tell me what to roll? `roll X sided die` or `roll XdY` should work.", requester)
 		service.SendMessage(message.Channel(), reply)
 		return

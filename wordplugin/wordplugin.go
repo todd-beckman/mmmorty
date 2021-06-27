@@ -19,8 +19,23 @@ type words struct {
 
 // WordPlugin is the save data for this plugin
 type WordPlugin struct {
-	bot          *mmmorty.Bot
 	WordsByGuild map[string]words `json:"wordsByGuild"`
+}
+
+type handleFunc func(*mmmorty.Bot, mmmorty.Discord, mmmorty.DiscordMessage, string)
+
+func (p *WordPlugin) findHandler(service mmmorty.Discord, message mmmorty.DiscordMessage) handleFunc {
+	handlers := map[string]handleFunc{
+		addWordCommand:    p.handleAddWord,
+		deleteWordCommand: p.handleDeleteWord,
+		defineCommand:     p.handleDefine,
+	}
+	for c, h := range handlers {
+		if mmmorty.MatchesCommand(service, c, message) {
+			return h
+		}
+	}
+	return nil
 }
 
 // Help gets the usage for this plugin
@@ -50,6 +65,11 @@ func (p *WordPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message 
 		return
 	}
 
+	handler := p.findHandler(service, message)
+	if handler == nil {
+		return
+	}
+
 	requester := fmt.Sprintf("<@%s>", message.UserID())
 	channelID := message.Channel()
 	discordChannel, err := service.Channel(channelID)
@@ -69,13 +89,7 @@ func (p *WordPlugin) Message(bot *mmmorty.Bot, service mmmorty.Discord, message 
 		}
 	}
 
-	if mmmorty.MatchesCommand(service, addWordCommand, message) {
-		p.handleAddWord(bot, service, message, guildID)
-	} else if mmmorty.MatchesCommand(service, deleteWordCommand, message) {
-		p.handleDeleteWord(bot, service, message, guildID)
-	} else if mmmorty.MatchesCommand(service, defineCommand, message) {
-		p.handleDefine(bot, service, message, guildID)
-	}
+	handler(bot, service, message, guildID)
 }
 
 func (p *WordPlugin) handleAddWord(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
@@ -113,7 +127,6 @@ func (p *WordPlugin) handleAddWord(bot *mmmorty.Bot, service mmmorty.Discord, me
 
 	reply := fmt.Sprintf("You got it, %s! I will try to remember that!", requester)
 	service.SendMessage(message.Channel(), reply)
-	return
 }
 
 func (p *WordPlugin) handleDeleteWord(bot *mmmorty.Bot, service mmmorty.Discord, message mmmorty.DiscordMessage, guildID string) {
